@@ -8,7 +8,12 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 val objectMapper = jacksonObjectMapper()
 
 fun main() {
-    println(OpaPartialEval.toSql("input.json", "result.json"))
+    val whereClause = OpaPartialEval.toSql("input.json", "result.json")
+    val expected = "((entity.account_id = 456 AND entity.author_id = 123) OR (entity.account_id = 456 AND TRUE) OR (entity.account_id = 456 AND entity.author_id IN [789, 333]))"
+    if (whereClause != expected) {
+        throw IllegalStateException("Didn't generate expected SQL")
+    }
+    println(whereClause)
 }
 
 object OpaPartialEval {
