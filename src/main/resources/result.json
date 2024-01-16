@@ -1,0 +1,295 @@
+{
+  "partial": {
+    "queries": [
+      [
+        {
+          "index": 0,
+          "terms": [
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "eq"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "entity"
+                },
+                {
+                  "type": "string",
+                  "value": "account_id"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "current_user"
+                },
+                {
+                  "type": "string",
+                  "value": "account_id"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "terms": [
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "eq"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "entity"
+                },
+                {
+                  "type": "string",
+                  "value": "author_id"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "current_user"
+                },
+                {
+                  "type": "string",
+                  "value": "user_id"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "index": 0,
+          "terms": [
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "eq"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "entity"
+                },
+                {
+                  "type": "string",
+                  "value": "account_id"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "current_user"
+                },
+                {
+                  "type": "string",
+                  "value": "account_id"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "terms": [
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "internal"
+                },
+                {
+                  "type": "string",
+                  "value": "member_2"
+                }
+              ]
+            },
+            {
+              "type": "string",
+              "value": "view_all_goals"
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "current_user"
+                },
+                {
+                  "type": "string",
+                  "value": "permissions"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "index": 0,
+          "terms": [
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "eq"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "entity"
+                },
+                {
+                  "type": "string",
+                  "value": "account_id"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "current_user"
+                },
+                {
+                  "type": "string",
+                  "value": "account_id"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "terms": [
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "internal"
+                },
+                {
+                  "type": "string",
+                  "value": "member_2"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "entity"
+                },
+                {
+                  "type": "string",
+                  "value": "author_id"
+                }
+              ]
+            },
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "type": "string",
+                  "value": "current_user"
+                },
+                {
+                  "type": "string",
+                  "value": "direct_reports"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    ]
+  }
+}

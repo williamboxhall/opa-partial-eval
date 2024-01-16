@@ -1,0 +1,23 @@
+{
+  "current_user": {
+    "user_id": 123,
+    "account_id": 456,
+    "direct_reports": [
+      789,
+      333
+    ],
+    "roles": [
+      "admin",
+      "hrbp:scoped:org-unit:222"
+    ],
+    "permissions": [
+      "view_all_goals",
+      "create_survey"
+    ],
+    "org_units": [
+      222,
+      444,
+      666
+    ]
+  }
+}
