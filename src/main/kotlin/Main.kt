@@ -1,3 +1,5 @@
+import SqlOperator.EQUALS
+import SqlOperator.IN_LIST
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.type.TypeReference
@@ -22,8 +24,8 @@ object OpaPartialEval {
                 val (operatorTerm, firstOperand, secondOperand) = andQueries.terms
                 val sqlOperator = when (operatorTerm) {
                     is RefTerm -> when (operatorTerm.value.first().value) {
-                        "internal" -> SqlOperator.IN_LIST
-                        "eq" -> SqlOperator.EQUALS
+                        "internal" -> IN_LIST
+                        "eq" -> EQUALS
                         else -> throw IllegalStateException("Unexpected operator in term $operatorTerm")
                     }
 
@@ -34,22 +36,65 @@ object OpaPartialEval {
                 val clause: String = if (first is Right && second is Right) {
                     throw IllegalStateException("Can't have two columns in a WHERE clause: $first, $second")
                 } else if (first is Left && second is Left) {
-                    (first.left.value == second.left.value).toString().uppercase().also {
+                    when (first.left) {
+                        is StringValue -> if (second.left is StringValue) {
+                            when (sqlOperator) {
+                                EQUALS -> first.left.value == second.left.value
+                                IN_LIST -> throw IllegalStateException("Can't use IN operator with single strings: ${andQueries.terms}")
+                            }
+                        } else if (second.left is StringArrayValue) {
+                            when (sqlOperator) {
+                                EQUALS -> throw IllegalStateException("Can't use '=' operator with string arrays: ${andQueries.terms}")
+                                IN_LIST -> second.left.value.contains(first.left.value)
+                            }
+                        } else {
+                            throw IllegalStateException("Can't compare a StringValue (${first.left}) with a ${second::class.simpleName} (${second.left}).")
+                        }
+                        is IntValue -> if (second.left is IntValue) {
+                            when (sqlOperator) {
+                                EQUALS -> first.left.value == second.left.value
+                                IN_LIST -> throw IllegalStateException("Can't use IN operator with single ints: ${andQueries.terms}")
+                            }
+                        } else if (second.left is IntArrayValue) {
+                            when (sqlOperator) {
+                                EQUALS -> throw IllegalStateException("Can't use '=' operator with int arrays: ${andQueries.terms}")
+                                IN_LIST -> second.left.value.contains(first.left.value)
+                            }
+                        } else {
+                            throw IllegalStateException("Can't compare an IntValue (${first.left}) with a ${second::class.simpleName} (${second.left}).")
+                        }
+                        is StringArrayValue -> if (second.left is StringArrayValue) {
+                            when (sqlOperator) {
+                                EQUALS -> first.left.value == second.left.value
+                                IN_LIST -> throw IllegalStateException("Can't use IN operator with pairs of string arrays: ${andQueries.terms}")
+                            }
+                        } else {
+                            throw IllegalStateException("Can't compare an StringArrayValue (${first.left}) with a ${second::class.simpleName} (${second.left}).")
+                        }
+                        is IntArrayValue -> if (second.left is IntArrayValue) {
+                            when (sqlOperator) {
+                                EQUALS -> first.left.value == second.left.value
+                                IN_LIST -> throw IllegalStateException("Can't use IN operator with pairs of int arrays: ${andQueries.terms}")
+                            }
+                        } else {
+                            throw IllegalStateException("Can't compare an IntArrayValue (${first.left}) with a ${second::class.simpleName} (${second.left}).")
+                        }
+                    }.also {
                         // use real operator not always equals
-                        println("Compared ${first.left.value} == ${second.left.value} and got $it")
-                    }
+                        println("Compared ${first.left} $sqlOperator ${second.left} and got $it")
+                    }.toString().uppercase()
                 } else {
                     val leftOperand = when (first) {
-                        is Left -> first.left.value
+                        is Left -> first.left.toSqlString()
                         is Right -> first.right.name
                     }
                     val rightOperand = when (second) {
-                        is Left -> second.left.value
+                        is Left -> second.left.toSqlString()
                         is Right -> second.right.name
                     }
                     val operand = when (sqlOperator) {
-                        SqlOperator.EQUALS -> " = "
-                        SqlOperator.IN_LIST -> " IN "
+                        EQUALS -> " = "
+                        IN_LIST -> " IN "
                     }
                     leftOperand + operand + rightOperand
                 }
@@ -77,15 +122,22 @@ object OpaPartialEval {
             val valueFromInput = getValueFromNestedMapRecursive(inputMap, path)
             valueFromInput?.let {
                 when (it) {
-                    is String -> Left(ConstantValue("\"$it\""))
-                    is Int -> Left(ConstantValue("$it"))
-                    is ArrayList<*> -> Left(ConstantValue(it.joinToString(prefix = "[", postfix = "]", separator = ", ")))
+                    is String -> Left(StringValue(it))
+                    is Int -> Left(IntValue(it))
+                    is ArrayList<*> -> {
+                        when (it.first()) {
+                            is String -> Left(StringArrayValue(it as ArrayList<String>))
+                            is Int -> Left(IntArrayValue(it as ArrayList<Int>))
+                            else -> throw IllegalStateException("No support for $it data type")
+                        }
+                    }
+
                     else -> throw IllegalStateException("No support for $it data type")
                 }
             } ?: Right(ColumnName(path.joinToString(".")))
         }
 
-        is StringTerm -> Left(ConstantValue(leftTerm.value))
+        is StringTerm -> Left(StringValue(leftTerm.value))
     }
 
     private fun readFileFromResources(fileName: String): String {
@@ -148,5 +200,20 @@ fun <E, V> Either<E, Either<E, V>>.flatten(): Either<E, V> = when (this) {
     is Right -> this.right
 }
 
-data class ConstantValue(val value: String)
+sealed interface ConstantValue {
+    fun toSqlString(): String
+}
+data class StringValue(val value: String) : ConstantValue {
+    override fun toSqlString() = "\"$value\""
+}
+data class IntValue(val value: Int) : ConstantValue {
+    override fun toSqlString() = "$value"
+}
+data class StringArrayValue(val value: ArrayList<String>) : ConstantValue {
+    override fun toSqlString() = value.joinToString(prefix = "['", postfix = "']", separator = "', '")
+}
+data class IntArrayValue(val value: ArrayList<Int>) : ConstantValue {
+    override fun toSqlString() = value.joinToString(prefix = "[", postfix = "]", separator = ", ")
+}
+
 data class ColumnName(val name: String)
