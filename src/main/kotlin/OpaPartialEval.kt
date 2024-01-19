@@ -19,60 +19,69 @@ object OpaPartialEval {
         return criteria.toSqlString()
     }
 
-    private fun compileApiResponseToCriteria(compileApiResponse: CompileApiResponse): OrCriteria = OrCriteria(
-        compileApiResponse.result.queries.map { orQueries ->
-            AndCriteria(
-                orQueries.mapNotNull { andQueries ->
-                    if (andQueries.terms.size == 3) {
-                        val (operatorTerm, leftOperand, rightOperand) = andQueries.terms
-                        val operator = when (operatorTerm) {
-                            is RefTerm -> {
-                                val operatorVar = operatorTerm.value.first()
-                                if (operatorVar !is VarTerm) {
-                                    throw IllegalStateException("Unexpected type of operator term: $operatorTerm")
-                                }
-                                when (operatorVar.value) {
-                                    "internal" -> IN_LIST
-                                    "eq" -> EQUALS
-                                    else -> throw IllegalStateException("Unexpected operator in term $operatorTerm")
-                                }
-                            }
+    // TODO can both rules.queries and rules.support exist at the same time?
+    private fun compileApiResponseToCriteria(compileApiResponse: CompileApiResponse): OrCriteria {
+        if (compileApiResponse.result.support != null) {
+            throw IllegalStateException("Not yet supporting 'support' block")
+        }
+        val andCriteria = compileApiResponse.result.queries.map { AndCriteria(parseQueries(it)) }
+        return OrCriteria(andCriteria)
+    }
 
-                            else -> throw IllegalStateException("Operators must be ref terms: $operatorTerm")
-                        }
-                        val left = parseOperand(leftOperand)
-                        val right = parseOperand(rightOperand)
-                        if (left is EntityFieldReference && right is EntityFieldReference) {
-                            throw IllegalStateException("Can't have two field references as operands: $left, $right")
-                        } else if (left is ConstantValue && right is ConstantValue) {
-                            throw IllegalStateException("Can't have two constants as operands (because OPA should have already evaluated them): $left, $right")
-                        } else {
-                            Criterion(operator, left, right)
-                        }
-                    } else if (andQueries.terms.size == 1) {
-                        val policyReference = andQueries.terms.first()
-                        when (policyReference) {
-                            is RefTerm -> {
-                                if (policyReference.value.size != 4) {
-                                    throw IllegalStateException("Unexpected length of policy reference term: $policyReference")
-                                }
-                                val policyReferenceVar = policyReference.value.first()
-                                if (policyReferenceVar !is VarTerm || policyReferenceVar.value != "data") {
-                                    throw IllegalStateException("Unexpected format of policy reference term: $policyReferenceVar")
-                                }
-                                println("Looks like this is just a policy reference: ${policyReference.value}")
-                            }
+    private fun parseQueries(orQueries: List<Query>) = orQueries.mapNotNull { andQueries ->
+        when (andQueries.terms.size) {
+            3 -> parseCriterion(andQueries)
+            1 -> parsePolicyReference(andQueries)
+            else -> throw IllegalStateException("Unexpected terms structure: ${andQueries.terms}")
+        }
+    }
 
-                            else -> throw IllegalStateException("Expected policy reference term but found $policyReference")
-                        }
-                        null
-                    } else {
-                        throw IllegalStateException("Unexpected terms structure: ${andQueries.terms}")
-                    }
-                },
-            )
-        },
-    )
+    private fun parsePolicyReference(query: Query): Nothing? {
+        val policyReference = query.terms.first()
+        when (policyReference) {
+            is RefTerm -> {
+                if (policyReference.value.size != 4) {
+                    throw IllegalStateException("Unexpected length of policy reference term: $policyReference")
+                }
+                val policyReferenceVar = policyReference.value.first()
+                if (policyReferenceVar !is VarTerm || policyReferenceVar.value != "data") {
+                    throw IllegalStateException("Unexpected format of policy reference term: $policyReferenceVar")
+                }
+                println("Looks like this is just a policy reference: ${policyReference.value}")
+            }
+
+            else -> throw IllegalStateException("Expected policy reference term but found $query")
+        }
+        return null
+    }
+
+    private fun parseCriterion(andQueries: Query): Criterion {
+        val (operatorTerm, leftOperand, rightOperand) = andQueries.terms
+        val operator = when (operatorTerm) {
+            is RefTerm -> {
+                val operatorVar = operatorTerm.value.first()
+                if (operatorVar !is VarTerm) {
+                    throw IllegalStateException("Unexpected type of operator term: $operatorTerm")
+                }
+                when (operatorVar.value) {
+                    "internal" -> IN_LIST
+                    "eq" -> EQUALS
+                    else -> throw IllegalStateException("Unexpected operator in term $operatorTerm")
+                }
+            }
+
+            else -> throw IllegalStateException("Operators must be ref terms: $operatorTerm")
+        }
+        val left = parseOperand(leftOperand)
+        val right = parseOperand(rightOperand)
+        return if (left is EntityFieldReference && right is EntityFieldReference) {
+            throw IllegalStateException("Can't have two field references as operands: $left, $right")
+        } else if (left is ConstantValue && right is ConstantValue) {
+            throw IllegalStateException("Can't have two constants as operands (because OPA should have already evaluated them): $left, $right")
+        } else {
+            Criterion(operator, left, right)
+        }
+    }
 
     private fun parseOperand(term: Term): Operand = when (term) {
         is RefTerm -> {
@@ -191,6 +200,7 @@ data class OrCriteria(val andCriteria: List<AndCriteria>) {
 }
 
 // To handle weird json where it can be a singleton or list of Term
+// TODO we may be able to get rid of this if we no longer need to support "support" block of compile api
 class TermsDeserializer : JsonDeserializer<List<Term>>() {
     override fun deserialize(jp: JsonParser, ctxt: DeserializationContext): List<Term> {
         val node: JsonNode = jp.codec.readTree(jp)
