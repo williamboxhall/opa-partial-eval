@@ -7,21 +7,9 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 val objectMapper = jacksonObjectMapper()
 
-fun main() {
-    val whereClause = OpaPartialEval.toSql("input.json", "result.json")
-    val expected = "((entity.account_id = 456 AND entity.author_id = 123) OR (entity.account_id = 456 AND TRUE) OR (entity.account_id = 456 AND entity.author_id IN [789, 333]))"
-    if (whereClause != expected) {
-        throw IllegalStateException("Didn't generate expected SQL")
-    }
-    println(whereClause)
-}
-
 object OpaPartialEval {
-
-    fun toSql(inputFileName: String, resultFileName: String): String {
-        val inputJson = readFileFromResources(inputFileName)
+    fun toSql(inputJson: String, resultJson: String): String {
         val inputMap = objectMapper.readValue(inputJson, object : TypeReference<Map<String, Any>>() {})
-        val resultJson = readFileFromResources(resultFileName)
         val resultAst = objectMapper.readValue(resultJson, Result::class.java)
 
         val parsed: List<List<String>> = resultAst.partial.queries.map { orQueries ->
@@ -145,11 +133,7 @@ object OpaPartialEval {
         is StringTerm -> Left(StringValue(leftTerm.value))
     }
 
-    private fun readFileFromResources(fileName: String): String {
-        return this::class.java.getResource(fileName).readText(Charsets.UTF_8)
-    }
-
-    // there must be libraries for accessing json recursively
+    // there must be libraries for accessing json maps recursively
     tailrec fun getValueFromNestedMapRecursive(current: Map<String, Any>, path: List<String>): Any? {
         if (path.isEmpty()) {
             throw IllegalArgumentException("Path cannot be empty")
