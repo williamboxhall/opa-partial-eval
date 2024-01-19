@@ -1,5 +1,5 @@
 {
-  "partial": {
+  "result": {
     "queries": [
       [
         {
@@ -15,21 +15,8 @@
               ]
             },
             {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "entity"
-                },
-                {
-                  "type": "string",
-                  "value": "account_id"
-                }
-              ]
+              "type": "number",
+              "value": 456
             },
             {
               "type": "ref",
@@ -40,7 +27,7 @@
                 },
                 {
                   "type": "string",
-                  "value": "current_user"
+                  "value": "entity"
                 },
                 {
                   "type": "string",
@@ -61,6 +48,10 @@
                   "value": "eq"
                 }
               ]
+            },
+            {
+              "type": "number",
+              "value": 123
             },
             {
               "type": "ref",
@@ -78,6 +69,26 @@
                   "value": "author_id"
                 }
               ]
+            }
+          ]
+        }
+      ],
+      [
+        {
+          "index": 0,
+          "terms": [
+            {
+              "type": "ref",
+              "value": [
+                {
+                  "type": "var",
+                  "value": "eq"
+                }
+              ]
+            },
+            {
+              "type": "number",
+              "value": 456
             },
             {
               "type": "ref",
@@ -88,11 +99,11 @@
                 },
                 {
                   "type": "string",
-                  "value": "current_user"
+                  "value": "entity"
                 },
                 {
                   "type": "string",
-                  "value": "user_id"
+                  "value": "account_id"
                 }
               ]
             }
@@ -113,93 +124,8 @@
               ]
             },
             {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "entity"
-                },
-                {
-                  "type": "string",
-                  "value": "account_id"
-                }
-              ]
-            },
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "current_user"
-                },
-                {
-                  "type": "string",
-                  "value": "account_id"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "index": 1,
-          "terms": [
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "internal"
-                },
-                {
-                  "type": "string",
-                  "value": "member_2"
-                }
-              ]
-            },
-            {
-              "type": "string",
-              "value": "view_all_goals"
-            },
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "current_user"
-                },
-                {
-                  "type": "string",
-                  "value": "permissions"
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      [
-        {
-          "index": 0,
-          "terms": [
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "eq"
-                }
-              ]
+              "type": "number",
+              "value": 456
             },
             {
               "type": "ref",
@@ -211,23 +137,6 @@
                 {
                   "type": "string",
                   "value": "entity"
-                },
-                {
-                  "type": "string",
-                  "value": "account_id"
-                }
-              ]
-            },
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "current_user"
                 },
                 {
                   "type": "string",
@@ -271,19 +180,15 @@
               ]
             },
             {
-              "type": "ref",
+              "type": "array",
               "value": [
                 {
-                  "type": "var",
-                  "value": "input"
+                  "type": "number",
+                  "value": 789
                 },
                 {
-                  "type": "string",
-                  "value": "current_user"
-                },
-                {
-                  "type": "string",
-                  "value": "direct_reports"
+                  "type": "number",
+                  "value": 333
                 }
               ]
             }

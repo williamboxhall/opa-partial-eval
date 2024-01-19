@@ -1,19 +1,24 @@
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.fail
 
 class OpaPartialEvalTest {
     @Test
     fun `generates SQL fragments for 'some i' construct`() {
+        fail("To be implemented")
+    }
+
+    @Test
+    fun `generates SQL fragments for 'in' construct`() {
         assertEquals(
-            "((entity.account_id = 456 AND entity.author_id = 123) OR (entity.account_id = 456 AND TRUE) OR (entity.account_id = 456 AND entity.author_id IN [789, 333]))",
-            OpaPartialEval.toSql(readFile("input.json"), readFile("result.json")),
+            "((456 = entity.account_id AND 123 = entity.author_id) OR (456 = entity.account_id) OR (456 = entity.account_id AND entity.author_id IN [789, 333]))",
+            OpaPartialEval.compileApiResponseToSql(readFile("compile-api-result-in-construct.json")),
         )
     }
 
-    fun `generates SQL fragments for 'in' construct`() {
-    }
-
+    @Test
     fun `generates SQL fragments string equality`() {
+        fail("To be implemented")
     }
 
     private fun readFile(fileName: String): String {
