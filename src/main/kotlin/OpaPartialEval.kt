@@ -2,6 +2,12 @@ import Operator.EQUALS
 import Operator.IN_LIST
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 val objectMapper = jacksonObjectMapper()
@@ -31,6 +37,7 @@ object OpaPartialEval {
                                     else -> throw IllegalStateException("Unexpected operator in term $operatorTerm")
                                 }
                             }
+
                             else -> throw IllegalStateException("Operators must be ref terms: $operatorTerm")
                         }
                         val left = parseOperand(leftOperand)
@@ -55,6 +62,7 @@ object OpaPartialEval {
                                 }
                                 println("Looks like this is just a policy reference: ${policyReference.value}")
                             }
+
                             else -> throw IllegalStateException("Expected policy reference term but found $policyReference")
                         }
                         null
@@ -83,6 +91,7 @@ object OpaPartialEval {
             }
             EntityFieldReference(entityName = entity.value, fieldName = field.value)
         }
+
         is StringTerm -> StringValue(term.value)
         is NumberTerm -> NumberValue(term.value)
         is BooleanTerm -> BooleanValue(term.value)
@@ -94,14 +103,15 @@ object OpaPartialEval {
             is ArrayTerm -> throw IllegalStateException("Can't support arrays of arrays: $term")
             is VarTerm -> throw IllegalStateException("Can't support arrays of vars: $term")
         }
+
         is VarTerm -> throw IllegalStateException("Operand can't be a 'var' term: $term")
     }
 }
 
-data class Query(val index: Int, val terms: List<Term>)
-data class Head(val name: String, val value: Term)
-data class Rule(val body: List<Query>, val default: Boolean, val head: Head)
-data class Package(val path: List<Term>)
+data class Query(val index: Int, @JsonDeserialize(using = TermsDeserializer::class) val terms: List<Term>)
+data class Head(val name: String, @JsonDeserialize(using = TermsDeserializer::class) val value: Term, val ref: List<Term>)
+data class Rule(val body: List<Query>, val default: Boolean?, val head: Head)
+data class Package(@JsonDeserialize(using = TermsDeserializer::class) val path: List<Term>)
 data class Support(val `package`: Package, val rules: List<Rule>)
 data class Result(val queries: List<List<Query>>, val support: List<Support>?)
 data class CompileApiResponse(val result: Result)
@@ -116,7 +126,7 @@ data class CompileApiResponse(val result: Result)
     JsonSubTypes.Type(value = VarTerm::class, name = "var"),
     JsonSubTypes.Type(value = StringTerm::class, name = "string"),
     JsonSubTypes.Type(value = NumberTerm::class, name = "number"),
-    JsonSubTypes.Type(value = ArrayTerm::class, name = "boolean"),
+    JsonSubTypes.Type(value = BooleanTerm::class, name = "boolean"),
     JsonSubTypes.Type(value = ArrayTerm::class, name = "array"),
 )
 sealed interface Term
@@ -178,4 +188,20 @@ data class AndCriteria(val criteria: List<Criterion>) {
 
 data class OrCriteria(val andCriteria: List<AndCriteria>) {
     fun toSqlString() = andCriteria.map { it.toSqlString() }.joinToString(prefix = "(", postfix = ")", separator = " OR ")
+}
+
+// To handle weird json where it can be a singleton or list of Term
+class TermsDeserializer : JsonDeserializer<List<Term>>() {
+    override fun deserialize(jp: JsonParser, ctxt: DeserializationContext): List<Term> {
+        val node: JsonNode = jp.codec.readTree(jp)
+        val objectMapper: ObjectMapper = jacksonObjectMapper()
+
+        return if (node.isArray) {
+            // Deserialize as a list of Terms
+            node.map { objectMapper.treeToValue(it, Term::class.java) }
+        } else {
+            // Deserialize as a single Term and wrap in a list
+            listOf(objectMapper.treeToValue(node, Term::class.java))
+        }
+    }
 }

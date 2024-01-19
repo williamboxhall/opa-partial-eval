@@ -5,7 +5,10 @@ import kotlin.test.fail
 class OpaPartialEvalTest {
     @Test
     fun `generates SQL fragments for 'some i' construct`() {
-        fail("To be implemented")
+        assertEquals(
+            "???",
+            OpaPartialEval.compileApiResponseToSql(readFile("compile-api-result-some-construct.json")),
+        )
     }
 
     @Test
