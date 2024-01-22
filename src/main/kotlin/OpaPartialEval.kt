@@ -10,10 +10,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
-val objectMapper = jacksonObjectMapper()
-
 // refer to the Go classes https://github.com/open-policy-agent/opa/blob/main/ast/policy.go
 object OpaPartialEval {
+    private val objectMapper = jacksonObjectMapper()
+
     fun compileApiResponseToSql(compileApiResponseJson: String): String {
         val compileApiResponse = objectMapper.readValue(compileApiResponseJson, CompileResult::class.java)
         val criteria = compileApiResponseToCriteria(compileApiResponse)
@@ -120,6 +120,7 @@ object OpaPartialEval {
 
 typealias Body = List<Expr> // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L224
 typealias Ref = List<Term> // see https://github.com/open-policy-agent/opa/blob/c0589c1272020ee8681a78fe432393008a28efb8/ast/term.go#L880
+
 data class Expr(val index: Int, @JsonDeserialize(using = TermsDeserializer::class) val terms: List<Term>) // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L227
 data class Head(val name: String, @JsonDeserialize(using = TermsDeserializer::class) val value: Term, val ref: Ref) // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L205
 data class Rule(val body: Body, val default: Boolean?, val head: Head) // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L187
