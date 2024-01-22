@@ -12,6 +12,7 @@ object OpaHttpClientTest {
         val userContext = OpaHttpClient.objectMapper.readValue(userContextJson, UserContext::class.java)
         runBlocking {
             assertEquals(readFile("responses/compile-api-result-complex-some-construct.json"), compileApiResponseJson(userContext, "goals3"))
+            assertEquals(readFile("responses/compile-api-result-in-construct.json"), compileApiResponseJson(userContext, "goals1"))
         }
         println("All test files look correct!")
     }

@@ -1,200 +1,134 @@
 {
-  "result": {
-    "queries": [
-      [
-        {
-          "index": 0,
-          "terms": [
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "eq"
-                }
-              ]
-            },
-            {
-              "type": "number",
-              "value": 456
-            },
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "entity"
-                },
-                {
-                  "type": "string",
-                  "value": "account_id"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "index": 1,
-          "terms": [
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "eq"
-                }
-              ]
-            },
-            {
-              "type": "number",
-              "value": 123
-            },
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "entity"
-                },
-                {
-                  "type": "string",
-                  "value": "author_id"
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      [
-        {
-          "index": 0,
-          "terms": [
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "eq"
-                }
-              ]
-            },
-            {
-              "type": "number",
-              "value": 456
-            },
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "entity"
-                },
-                {
-                  "type": "string",
-                  "value": "account_id"
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      [
-        {
-          "index": 0,
-          "terms": [
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "eq"
-                }
-              ]
-            },
-            {
-              "type": "number",
-              "value": 456
-            },
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "entity"
-                },
-                {
-                  "type": "string",
-                  "value": "account_id"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "index": 1,
-          "terms": [
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "internal"
-                },
-                {
-                  "type": "string",
-                  "value": "member_2"
-                }
-              ]
-            },
-            {
-              "type": "ref",
-              "value": [
-                {
-                  "type": "var",
-                  "value": "input"
-                },
-                {
-                  "type": "string",
-                  "value": "entity"
-                },
-                {
-                  "type": "string",
-                  "value": "author_id"
-                }
-              ]
-            },
-            {
-              "type": "array",
-              "value": [
-                {
-                  "type": "number",
-                  "value": 789
-                },
-                {
-                  "type": "number",
-                  "value": 333
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    ]
+  "result" : {
+    "queries" : [ [ {
+      "index" : 0,
+      "terms" : [ {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "eq"
+        } ]
+      }, {
+        "type" : "number",
+        "value" : 456
+      }, {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "input"
+        }, {
+          "type" : "string",
+          "value" : "entity"
+        }, {
+          "type" : "string",
+          "value" : "account_id"
+        } ]
+      } ]
+    }, {
+      "index" : 1,
+      "terms" : [ {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "eq"
+        } ]
+      }, {
+        "type" : "number",
+        "value" : 123
+      }, {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "input"
+        }, {
+          "type" : "string",
+          "value" : "entity"
+        }, {
+          "type" : "string",
+          "value" : "author_id"
+        } ]
+      } ]
+    } ], [ {
+      "index" : 0,
+      "terms" : [ {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "eq"
+        } ]
+      }, {
+        "type" : "number",
+        "value" : 456
+      }, {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "input"
+        }, {
+          "type" : "string",
+          "value" : "entity"
+        }, {
+          "type" : "string",
+          "value" : "account_id"
+        } ]
+      } ]
+    } ], [ {
+      "index" : 0,
+      "terms" : [ {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "eq"
+        } ]
+      }, {
+        "type" : "number",
+        "value" : 456
+      }, {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "input"
+        }, {
+          "type" : "string",
+          "value" : "entity"
+        }, {
+          "type" : "string",
+          "value" : "account_id"
+        } ]
+      } ]
+    }, {
+      "index" : 1,
+      "terms" : [ {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "internal"
+        }, {
+          "type" : "string",
+          "value" : "member_2"
+        } ]
+      }, {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "input"
+        }, {
+          "type" : "string",
+          "value" : "entity"
+        }, {
+          "type" : "string",
+          "value" : "author_id"
+        } ]
+      }, {
+        "type" : "array",
+        "value" : [ {
+          "type" : "number",
+          "value" : 789
+        }, {
+          "type" : "number",
+          "value" : 333
+        } ]
+      } ]
+    } ] ]
   }
 }
