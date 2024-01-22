@@ -12,15 +12,16 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 val objectMapper = jacksonObjectMapper()
 
+// refer to the Go classes https://github.com/open-policy-agent/opa/blob/main/ast/policy.go
 object OpaPartialEval {
     fun compileApiResponseToSql(compileApiResponseJson: String): String {
-        val compileApiResponse = objectMapper.readValue(compileApiResponseJson, CompileApiResponse::class.java)
+        val compileApiResponse = objectMapper.readValue(compileApiResponseJson, CompileResult::class.java)
         val criteria = compileApiResponseToCriteria(compileApiResponse)
         return criteria.toSqlString()
     }
 
     // TODO can both rules.queries and rules.support exist at the same time?
-    private fun compileApiResponseToCriteria(compileApiResponse: CompileApiResponse): OrCriteria {
+    private fun compileApiResponseToCriteria(compileApiResponse: CompileResult): OrCriteria {
         if (compileApiResponse.result.support != null) {
             throw IllegalStateException("Not yet supporting 'support' block")
         }
@@ -28,7 +29,7 @@ object OpaPartialEval {
         return OrCriteria(andCriteria)
     }
 
-    private fun parseQueries(orQueries: List<Query>) = orQueries.mapNotNull { andQueries ->
+    private fun parseQueries(orQueries: List<Expr>) = orQueries.mapNotNull { andQueries ->
         when (andQueries.terms.size) {
             3 -> parseCriterion(andQueries)
             1 -> parsePolicyReference(andQueries)
@@ -36,7 +37,7 @@ object OpaPartialEval {
         }
     }
 
-    private fun parsePolicyReference(query: Query): Nothing? {
+    private fun parsePolicyReference(query: Expr): Nothing? {
         val policyReference = query.terms.first()
         when (policyReference) {
             is RefTerm -> {
@@ -55,7 +56,7 @@ object OpaPartialEval {
         return null
     }
 
-    private fun parseCriterion(andQueries: Query): Criterion {
+    private fun parseCriterion(andQueries: Expr): Criterion {
         val (operatorTerm, leftOperand, rightOperand) = andQueries.terms
         val operator = when (operatorTerm) {
             is RefTerm -> {
@@ -117,13 +118,15 @@ object OpaPartialEval {
     }
 }
 
-data class Query(val index: Int, @JsonDeserialize(using = TermsDeserializer::class) val terms: List<Term>)
-data class Head(val name: String, @JsonDeserialize(using = TermsDeserializer::class) val value: Term, val ref: List<Term>)
-data class Rule(val body: List<Query>, val default: Boolean?, val head: Head)
-data class Package(@JsonDeserialize(using = TermsDeserializer::class) val path: List<Term>)
-data class Support(val `package`: Package, val rules: List<Rule>)
-data class Result(val queries: List<List<Query>>, val support: List<Support>?)
-data class CompileApiResponse(val result: Result)
+typealias Body = List<Expr> // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L224
+typealias Ref = List<Term> // see https://github.com/open-policy-agent/opa/blob/c0589c1272020ee8681a78fe432393008a28efb8/ast/term.go#L880
+data class Expr(val index: Int, @JsonDeserialize(using = TermsDeserializer::class) val terms: List<Term>) // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L227
+data class Head(val name: String, @JsonDeserialize(using = TermsDeserializer::class) val value: Term, val ref: Ref) // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L205
+data class Rule(val body: Body, val default: Boolean?, val head: Head) // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L187
+data class Package(@JsonDeserialize(using = TermsDeserializer::class) val path: Ref) // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L168
+data class Module(val `package`: Package, val rules: List<Rule>) // see https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L147
+data class PartialQueries(val queries: List<Body>, val support: List<Module>?) // see https://github.com/open-policy-agent/opa/blob/c0589c1272020ee8681a78fe432393008a28efb8/server/types/types.go#L388
+data class CompileResult(val result: PartialQueries)
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -200,6 +203,8 @@ data class OrCriteria(val andCriteria: List<AndCriteria>) {
 }
 
 // To handle weird json where it can be a singleton or list of Term
+// see: https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L229
+// and: https://github.com/open-policy-agent/opa/blob/main/ast/policy.go#L1206
 // TODO we may be able to get rid of this if we no longer need to support "support" block of compile api
 class TermsDeserializer : JsonDeserializer<List<Term>>() {
     override fun deserialize(jp: JsonParser, ctxt: DeserializationContext): List<Term> {
