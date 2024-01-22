@@ -7,3 +7,8 @@ Download the opa command-line tool from here: https://www.openpolicyagent.org/do
 ```shell
 $ ./opa run -s -b ~/<your dev directory>/opa-partial-eval/src/test/resources/policies/
 ```
+
+Then run the tests
+```shell
+./gradlew build
+```
