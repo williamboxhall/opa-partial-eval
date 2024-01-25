@@ -18,6 +18,4 @@ allow if {
 # Rule to allow viewing a goal if account ID matches and the current user has "view_all_goals" permission
 allow if {
 	input.entity.account_id == input.current_user.account_id
-	some i
-	input.current_user.permissions[i] == "view_all_goals"
 }
