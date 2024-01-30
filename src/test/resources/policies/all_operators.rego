@@ -3,8 +3,6 @@ package all_operators
 import future.keywords.if
 import future.keywords.in
 
-default allow := false
-
 allow if {
 	input.entity.a == 1
 	input.entity.b == { "foo", "bar" }

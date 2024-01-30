@@ -57,31 +57,54 @@ object OpaPartialEval {
     }
 
     private fun parseCriterion(andQueries: Expr): Criterion {
-        val (operatorTerm, leftOperand, rightOperand) = andQueries.terms
-        val operator = when (operatorTerm) {
-            is RefTerm -> {
-                val operatorVar = operatorTerm.value.first()
-                if (operatorVar !is VarTerm) {
-                    throw IllegalStateException("Unexpected type of operator term: $operatorTerm")
-                }
-                when (operatorVar.value) {
-                    "internal" -> IN_LIST
-                    "eq" -> EQUALS
-                    else -> throw IllegalStateException("Unexpected operator in term $operatorTerm")
-                }
+        data class ExpressionTerms(val operatorTerm: Term, val leftOperand: Term, val rightOperand: Term, val functionCallTerm: Term?)
+        val expressionTerms = when (andQueries.terms.size) {
+            4 -> ExpressionTerms(andQueries.terms.get(0), andQueries.terms.get(2), andQueries.terms.get(3), andQueries.terms.getOrNull(1))
+            3 -> ExpressionTerms(andQueries.terms.get(0), andQueries.terms.get(1), andQueries.terms.get(2), null)
+            else -> throw IllegalStateException("andQueries should be 3 or 4 terms long but was $andQueries")
+        }
+        with(expressionTerms) {
+            val operator = parseOperator(operatorTerm)
+            val functionCall = functionCallTerm?.let { parseFunctionCall(it) }
+            val left = parseOperand(leftOperand)
+            val right = parseOperand(rightOperand)
+            return if (left is EntityFieldReference && right is EntityFieldReference) {
+                throw IllegalStateException("Can't have two field references as operands: $left, $right")
+            } else if (left is ConstantValue && right is ConstantValue) {
+                throw IllegalStateException("Can't have two constants as operands (because OPA should have already evaluated them): $left, $right")
+            } else {
+                Criterion(operator, left, right, functionCall)
             }
+        }
+    }
 
-            else -> throw IllegalStateException("Operators must be ref terms: $operatorTerm")
+    private fun parseOperator(term: Term): Operator = when (term) {
+        is RefTerm -> {
+            val operatorVar = term.value.first()
+            if (operatorVar !is VarTerm) {
+                throw IllegalStateException("Unexpected type of operator term: $term")
+            }
+            when (operatorVar.value) {
+                "internal" -> IN_LIST
+                "eq" -> EQUALS
+                else -> throw IllegalStateException("Unexpected operator in term $term")
+            }
         }
-        val left = parseOperand(leftOperand)
-        val right = parseOperand(rightOperand)
-        return if (left is EntityFieldReference && right is EntityFieldReference) {
-            throw IllegalStateException("Can't have two field references as operands: $left, $right")
-        } else if (left is ConstantValue && right is ConstantValue) {
-            throw IllegalStateException("Can't have two constants as operands (because OPA should have already evaluated them): $left, $right")
-        } else {
-            Criterion(operator, left, right)
+        else -> throw IllegalStateException("Operators must be ref terms: $term")
+    }
+
+    private fun parseFunctionCall(term: Term): FunctionCall = when (term) {
+        is CallTerm -> {
+            val operatorVar = term.value.first()
+            if (operatorVar !is VarTerm) {
+                throw IllegalStateException("Unexpected type of function call term: $term")
+            }
+            when (operatorVar.value) {
+                "max" -> FunctionCall.MAX
+                else -> throw IllegalStateException("Unexpected function call in term $term")
+            }
         }
+        else -> throw IllegalStateException("Function calls must be call terms: $term")
     }
 
     private fun parseOperand(term: Term): Operand = when (term) {
@@ -105,6 +128,8 @@ object OpaPartialEval {
         is StringTerm -> StringValue(term.value)
         is NumberTerm -> NumberValue(term.value)
         is BooleanTerm -> BooleanValue(term.value)
+        is VarTerm -> throw IllegalStateException("Operand can't be a 'var' term: $term")
+        is CallTerm -> throw IllegalStateException("Operand can't be a 'call' term: $term")
         is ArrayTerm -> when (term.value.first()) {
             is NumberTerm -> NumberArrayValue((term.value as List<NumberTerm>).map { it.value })
             is StringTerm -> StringArrayValue((term.value as List<StringTerm>).map { it.value })
@@ -112,9 +137,8 @@ object OpaPartialEval {
             is RefTerm -> throw IllegalStateException("Can't match on multiple references: $term")
             is ArrayTerm -> throw IllegalStateException("Can't support arrays of arrays: $term")
             is VarTerm -> throw IllegalStateException("Can't support arrays of vars: $term")
+            is CallTerm -> throw IllegalStateException("Can't support arrays of calls: $term")
         }
-
-        is VarTerm -> throw IllegalStateException("Operand can't be a 'var' term: $term")
     }
 }
 
@@ -141,6 +165,8 @@ data class CompileResult(val result: PartialQueries)
     JsonSubTypes.Type(value = NumberTerm::class, name = "number"),
     JsonSubTypes.Type(value = BooleanTerm::class, name = "boolean"),
     JsonSubTypes.Type(value = ArrayTerm::class, name = "array"),
+    JsonSubTypes.Type(value = ArrayTerm::class, name = "set"), // Currently not bothering to represent Sets as semantic sets, Array is fine
+    JsonSubTypes.Type(value = CallTerm::class, name = "call"),
 )
 sealed interface Term
 data class RefTerm(val value: List<Term>) : Term
@@ -149,6 +175,7 @@ data class StringTerm(val value: String) : Term
 data class NumberTerm(val value: Long) : Term // TODO can this be floating point?
 data class BooleanTerm(val value: Boolean) : Term
 data class ArrayTerm(val value: List<Term>) : Term
+data class CallTerm(val value: List<Term>) : Term // takes form: 0-operator, 1-Ref term for the function, 2-column/leftOperand, 3-const/rightOperand
 
 enum class Operator {
     EQUALS {
@@ -156,6 +183,15 @@ enum class Operator {
     },
     IN_LIST {
         override fun toSqlString() = "IN"
+    },
+    ;
+
+    abstract fun toSqlString(): String
+}
+
+enum class FunctionCall {
+    MAX {
+        override fun toSqlString() = "max"
     },
     ;
 
@@ -191,8 +227,10 @@ data class NumberArrayValue(val values: List<Long>) : ConstantValue {
     override fun toSqlString() = values.joinToString(prefix = "[", postfix = "]", separator = ", ")
 }
 
-data class Criterion(val operator: Operator, val leftOperand: Operand, val rightOperand: Operand) {
-    fun toSqlString() = "${leftOperand.toSqlString()} ${operator.toSqlString()} ${rightOperand.toSqlString()}"
+data class Criterion(val operator: Operator, val leftOperand: Operand, val rightOperand: Operand, val leftFunctionCall: FunctionCall?) {
+    fun toSqlString() {
+        "${leftFunctionCall?.let { "${it.toSqlString()}(" } ?: ""}${leftOperand.toSqlString()}${leftFunctionCall?.let { ")" ?: "" }} ${operator.toSqlString()} ${rightOperand.toSqlString()}"
+    }
 }
 
 data class AndCriteria(val criteria: List<Criterion>) {

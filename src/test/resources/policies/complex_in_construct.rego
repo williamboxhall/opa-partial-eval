@@ -1,4 +1,4 @@
-package goals1
+package complex_in_construct
 
 import future.keywords.if
 import future.keywords.in

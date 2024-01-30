@@ -26,7 +26,7 @@ object OpaHttpClient {
 
     internal suspend fun compileApiJson(input: UserContext, query: String): String {
         val body = objectMapper.writeValueAsString(CompileRequest(query, input, listOf("input.entity")))
-        println(body)
+        println("Querying opa compile api with: $body")
         val response = client.post("http://localhost:8181/v1/compile") {
             contentType(ContentType.Application.Json)
             setBody(body)

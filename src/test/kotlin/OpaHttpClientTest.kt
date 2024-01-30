@@ -11,9 +11,11 @@ object OpaHttpClientTest {
         val userContextJson = readFile("user-security-context.json")
         val userContext = OpaHttpClient.objectMapper.readValue(userContextJson, UserContext::class.java)
         runBlocking {
-            assertEquals(readFile("responses/compile-api-result-complex-some-construct.json"), compileApiResponseJson(userContext, "goals3"))
-            assertEquals(readFile("responses/compile-api-result-in-construct.json"), compileApiResponseJson(userContext, "goals1"))
+            assertEquals(readFile("responses/compile-api-result-complex-some-construct.json"), compileApiResponseJson(userContext, "complex_some_construct"))
+            assertEquals(readFile("responses/compile-api-result-complex-in-construct.json"), compileApiResponseJson(userContext, "complex_in_construct"))
             assertEquals(readFile("responses/compile-api-result-all-operators.json"), compileApiResponseJson(userContext, "all_operators"))
+            assertEquals(readFile("responses/compile-api-result-simple-without-default.json"), compileApiResponseJson(userContext, "simple_without_default"))
+            assertEquals(readFile("responses/compile-api-result-simple-with-default.json"), compileApiResponseJson(userContext, "simple_with_default"))
         }
         println("All test files look correct!")
     }
