@@ -22,6 +22,14 @@ class OpaPartialEvalTest {
         )
     }
 
+    @Test
+    fun `generates SQL fragments for all operator types`() {
+        assertEquals(
+            "???",
+            OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-all-operators.json")),
+        )
+    }
+
     private fun readFile(fileName: String): String {
         return this::class.java.getResource(fileName).readText(Charsets.UTF_8)
     }

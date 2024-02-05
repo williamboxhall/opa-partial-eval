@@ -1,5 +1,8 @@
 import Operator.EQUALS
+import Operator.GREATER_THAN
 import Operator.IN_LIST
+import Operator.LESS_THAN
+import Operator.NOT_EQUALS
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonParser
@@ -87,6 +90,10 @@ object OpaPartialEval {
             when (operatorVar.value) {
                 "internal" -> IN_LIST
                 "eq" -> EQUALS
+                "neq" -> NOT_EQUALS
+                "gt" -> GREATER_THAN
+                "lt" -> LESS_THAN
+                "count" -> LESS_THAN
                 else -> throw IllegalStateException("Unexpected operator in term $term")
             }
         }
@@ -181,8 +188,20 @@ enum class Operator {
     EQUALS {
         override fun toSqlString() = "="
     },
+    NOT_EQUALS {
+        override fun toSqlString() = "!="
+    },
     IN_LIST {
         override fun toSqlString() = "IN"
+    },
+    GREATER_THAN {
+        override fun toSqlString() = ">"
+    },
+    LESS_THAN {
+        override fun toSqlString() = "<"
+    },
+    COUNT {
+        override fun toSqlString() = "count"
     },
     ;
 

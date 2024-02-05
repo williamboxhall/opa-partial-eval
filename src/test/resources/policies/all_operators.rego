@@ -10,6 +10,7 @@ allow if {
     input.entity.d != 2
     input.entity.e > 3
     count(input.entity.f) == 4
+    count(input.entity.f2) > 42
     abs(input.entity.g) == 5
     ceil(input.entity.h) == 6
     input.entity.i + 1 == 7

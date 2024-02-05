@@ -159,6 +159,39 @@
         "type" : "ref",
         "value" : [ {
           "type" : "var",
+          "value" : "gt"
+        } ]
+      }, {
+        "type" : "call",
+        "value" : [ {
+          "type" : "ref",
+          "value" : [ {
+            "type" : "var",
+            "value" : "count"
+          } ]
+        }, {
+          "type" : "ref",
+          "value" : [ {
+            "type" : "var",
+            "value" : "input"
+          }, {
+            "type" : "string",
+            "value" : "entity"
+          }, {
+            "type" : "string",
+            "value" : "f2"
+          } ]
+        } ]
+      }, {
+        "type" : "number",
+        "value" : 42
+      } ]
+    }, {
+      "index" : 7,
+      "terms" : [ {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
           "value" : "abs"
         } ]
       }, {
@@ -178,7 +211,7 @@
         "value" : 5
       } ]
     }, {
-      "index" : 7,
+      "index" : 8,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -202,7 +235,7 @@
         "value" : 6
       } ]
     }, {
-      "index" : 8,
+      "index" : 9,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -229,7 +262,7 @@
         "value" : 7
       } ]
     }, {
-      "index" : 9,
+      "index" : 10,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -256,7 +289,7 @@
         "value" : 8
       } ]
     }, {
-      "index" : 10,
+      "index" : 11,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -280,7 +313,7 @@
         "value" : 0.912
       } ]
     }, {
-      "index" : 11,
+      "index" : 12,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -313,7 +346,7 @@
         "value" : 10
       } ]
     }, {
-      "index" : 12,
+      "index" : 13,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -343,7 +376,7 @@
         } ]
       } ]
     }, {
-      "index" : 13,
+      "index" : 14,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -367,7 +400,7 @@
         "value" : 11
       } ]
     }, {
-      "index" : 14,
+      "index" : 15,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
