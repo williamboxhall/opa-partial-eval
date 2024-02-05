@@ -1,8 +1,8 @@
-import Operator.EQUALS
-import Operator.GREATER_THAN
-import Operator.IN_LIST
-import Operator.LESS_THAN
-import Operator.NOT_EQUALS
+import EqualityOperator.EQUALS
+import EqualityOperator.GREATER_THAN
+import EqualityOperator.IN_LIST
+import EqualityOperator.LESS_THAN
+import EqualityOperator.NOT_EQUALS
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonParser
@@ -35,14 +35,16 @@ object OpaPartialEval {
     private fun parseQueries(orQueries: List<Expr>) = orQueries.mapNotNull { andQueries ->
         when (andQueries.terms.size) {
             3 -> parseCriterion(andQueries)
+            4 -> parseInfixFunctionCriterion(andQueries)
             1 -> parsePolicyReference(andQueries)
-            else -> throw IllegalStateException("Unexpected terms structure: ${andQueries.terms}")
+            else -> {
+                throw IllegalStateException("Unexpected terms structure: ${andQueries.terms}")
+            }
         }
     }
 
     private fun parsePolicyReference(query: Expr): Nothing? {
-        val policyReference = query.terms.first()
-        when (policyReference) {
+        when (val policyReference = query.terms.first()) {
             is RefTerm -> {
                 if (policyReference.value.size != 4) {
                     throw IllegalStateException("Unexpected length of policy reference term: $policyReference")
@@ -60,83 +62,123 @@ object OpaPartialEval {
     }
 
     private fun parseCriterion(andQueries: Expr): Criterion {
-        data class ExpressionTerms(val operatorTerm: Term, val leftOperand: Term, val rightOperand: Term, val functionCallTerm: Term?)
-        val expressionTerms = when (andQueries.terms.size) {
-            4 -> ExpressionTerms(andQueries.terms.get(0), andQueries.terms.get(2), andQueries.terms.get(3), andQueries.terms.getOrNull(1))
-            3 -> ExpressionTerms(andQueries.terms.get(0), andQueries.terms.get(1), andQueries.terms.get(2), null)
-            else -> throw IllegalStateException("andQueries should be 3 or 4 terms long but was $andQueries")
+        val (operatorTerm: Term, leftOperand: Term, rightOperand: Term) = when (andQueries.terms.size) {
+            3 -> andQueries.terms
+            else -> throw IllegalStateException("andQueries should be 3 terms long but was $andQueries")
         }
-        with(expressionTerms) {
-            val operator = parseOperator(operatorTerm)
-            val functionCall = functionCallTerm?.let { parseFunctionCall(it) }
-            val left = parseOperand(leftOperand)
-            val right = parseOperand(rightOperand)
-            return if (left is EntityFieldReference && right is EntityFieldReference) {
-                throw IllegalStateException("Can't have two field references as operands: $left, $right")
-            } else if (left is ConstantValue && right is ConstantValue) {
-                throw IllegalStateException("Can't have two constants as operands (because OPA should have already evaluated them): $left, $right")
-            } else {
-                Criterion(operator, left, right, functionCall)
-            }
+        val (operator, functionCall) = parseEqualityOperator(operatorTerm)
+        val left = parseOperand(leftOperand, functionCall)
+        val right = parseOperand(rightOperand, null)
+        return if (left is EntityFieldReference && right is EntityFieldReference) {
+            throw IllegalStateException("Can't have two field references as operands: $left, $right")
+        } else if (left is ConstantValue && right is ConstantValue) {
+            throw IllegalStateException("Can't have two constants as operands (because OPA should have already evaluated them): $left, $right")
+        } else {
+            Criterion(operator, left, right)
         }
     }
 
-    private fun parseOperator(term: Term): Operator = when (term) {
+    private fun parseInfixFunctionCriterion(andQueries: Expr): Criterion {
+        val (infixOperatorTerm: Term, leftOperandFirst: Term, leftOperandSecond: Term, rightOperand: Term) = when (andQueries.terms.size) {
+            4 -> andQueries.terms
+            else -> throw IllegalStateException("andQueries should be 4 terms long but was $andQueries")
+        }
+        val functionCall = parseInfixFunctionCall(infixOperatorTerm)
+        val leftFirst = parseOperand(leftOperandFirst, null)
+        val leftSecond = parseOperand(leftOperandSecond, null)
+        val right = parseOperand(rightOperand, null)
+        return if (right is EntityFieldReference && (leftFirst is EntityFieldReference || leftSecond is EntityFieldReference)) {
+            throw IllegalStateException("Can't have two field references as operands: ($leftFirst $functionCall $leftSecond) = $right")
+        } else {
+            Criterion(EQUALS, InfixFunctionCallOnOperands(functionCall, leftFirst, leftSecond), right)
+        }
+    }
+
+    private fun parseEqualityOperator(term: Term): Pair<EqualityOperator, UnaryFunctionCall?> = when (term) {
         is RefTerm -> {
             val operatorVar = term.value.first()
             if (operatorVar !is VarTerm) {
                 throw IllegalStateException("Unexpected type of operator term: $term")
             }
             when (operatorVar.value) {
-                "internal" -> IN_LIST
-                "eq" -> EQUALS
-                "neq" -> NOT_EQUALS
-                "gt" -> GREATER_THAN
-                "lt" -> LESS_THAN
-                "count" -> LESS_THAN
-                else -> throw IllegalStateException("Unexpected operator in term $term")
+                "internal" -> IN_LIST to null
+                "eq" -> EQUALS to null
+                "neq" -> NOT_EQUALS to null
+                "gt" -> GREATER_THAN to null
+                "lt" -> LESS_THAN to null
+                else -> EQUALS to UnaryFunctionCall.fromName(operatorVar.value)
             }
         }
+
         else -> throw IllegalStateException("Operators must be ref terms: $term")
     }
 
-    private fun parseFunctionCall(term: Term): FunctionCall = when (term) {
-        is CallTerm -> {
-            val operatorVar = term.value.first()
-            if (operatorVar !is VarTerm) {
-                throw IllegalStateException("Unexpected type of function call term: $term")
+    private fun parseUnaryFunctionCall(term: Term): UnaryFunctionCall = when (term) {
+        is RefTerm -> {
+            if (term.value.size != 1) {
+                throw IllegalStateException("Unexpected unary function call ref term format: $term")
             }
-            when (operatorVar.value) {
-                "max" -> FunctionCall.MAX
-                else -> throw IllegalStateException("Unexpected function call in term $term")
+            val functionVar = term.value.first()
+            if (functionVar !is VarTerm) {
+                throw IllegalStateException("Unexpected type of unary function call term: $term")
             }
+            UnaryFunctionCall.fromName(functionVar.value)
         }
-        else -> throw IllegalStateException("Function calls must be call terms: $term")
+        else -> {
+            throw IllegalStateException("Unary function calls must be ref terms: $term")
+        }
     }
 
-    private fun parseOperand(term: Term): Operand = when (term) {
+    private fun parseInfixFunctionCall(term: Term): InfixFunctionCall = when (term) {
         is RefTerm -> {
-            if (term.value.size != 3) {
-                throw IllegalStateException("Unexpected term format: $term")
+            if (term.value.size != 1) {
+                throw IllegalStateException("Unexpected infix function call ref term format: $term")
             }
-            val (dataSource, entity, field) = term.value
-            if (dataSource !is VarTerm || dataSource.value != "input") {
-                throw IllegalStateException("Unknown data source $dataSource")
+            val functionVar = term.value.first()
+            if (functionVar !is VarTerm) {
+                throw IllegalStateException("Unexpected type of infix function call term: $term")
             }
-            if (entity !is StringTerm) {
-                throw IllegalStateException("Unknown entity type $entity")
+            InfixFunctionCall.fromName(functionVar.value)
+        }
+        else -> {
+            throw IllegalStateException("Infix function calls must be call terms: $term")
+        }
+    }
+
+    private fun parseOperand(term: Term, operatorFunctionCall: UnaryFunctionCall?): Operand = when (term) {
+        is RefTerm -> {
+            val entityFieldReference = parseEntityFieldReference(term)
+            operatorFunctionCall?.let { FunctionCallOnFieldReference(entityFieldReference, it) } ?: entityFieldReference
+        }
+
+        is CallTerm -> {
+            if (term.value.size == 3) {
+                // nested infix function calls
+                val (infixFunction, leftOperand, rightOperand) = term.value
+                val function = parseInfixFunctionCall(infixFunction)
+                val left = parseOperand(leftOperand, null)
+                val right = parseOperand(rightOperand, null)
+                InfixFunctionCallOnOperands(function, left, right)
+            } else if (term.value.size == 2) {
+                val (function, field) = term.value
+                val entityFieldReference = when (field) {
+                    is RefTerm -> parseEntityFieldReference(field)
+                    else -> throw IllegalStateException("Field reference should be ref term but was: $field")
+                }
+                val functionCall = parseUnaryFunctionCall(function)
+                if (operatorFunctionCall != null) {
+                    throw IllegalStateException("Function call provided both in operator position and call position: $term, $operatorFunctionCall")
+                }
+                FunctionCallOnFieldReference(entityFieldReference, functionCall)
+            } else {
+                throw IllegalStateException("Unexpected call term format: $term")
             }
-            if (field !is StringTerm) {
-                throw IllegalStateException("Unknown field type $field")
-            }
-            EntityFieldReference(entityName = entity.value, fieldName = field.value)
         }
 
         is StringTerm -> StringValue(term.value)
         is NumberTerm -> NumberValue(term.value)
         is BooleanTerm -> BooleanValue(term.value)
         is VarTerm -> throw IllegalStateException("Operand can't be a 'var' term: $term")
-        is CallTerm -> throw IllegalStateException("Operand can't be a 'call' term: $term")
         is ArrayTerm -> when (term.value.first()) {
             is NumberTerm -> NumberArrayValue((term.value as List<NumberTerm>).map { it.value })
             is StringTerm -> StringArrayValue((term.value as List<StringTerm>).map { it.value })
@@ -146,6 +188,23 @@ object OpaPartialEval {
             is VarTerm -> throw IllegalStateException("Can't support arrays of vars: $term")
             is CallTerm -> throw IllegalStateException("Can't support arrays of calls: $term")
         }
+    }
+
+    private fun parseEntityFieldReference(term: RefTerm): EntityFieldReference {
+        if (term.value.size != 3) {
+            throw IllegalStateException("Unexpected term format: $term")
+        }
+        val (dataSource, entity, field) = term.value
+        if (dataSource !is VarTerm || dataSource.value != "input") {
+            throw IllegalStateException("Unknown data source $dataSource")
+        }
+        if (entity !is StringTerm) {
+            throw IllegalStateException("Unknown entity type $entity")
+        }
+        if (field !is StringTerm) {
+            throw IllegalStateException("Unknown field type $field")
+        }
+        return EntityFieldReference(entityName = entity.value, fieldName = field.value)
     }
 }
 
@@ -184,7 +243,7 @@ data class BooleanTerm(val value: Boolean) : Term
 data class ArrayTerm(val value: List<Term>) : Term
 data class CallTerm(val value: List<Term>) : Term // takes form: 0-operator, 1-Ref term for the function, 2-column/leftOperand, 3-const/rightOperand
 
-enum class Operator {
+enum class EqualityOperator {
     EQUALS {
         override fun toSqlString() = "="
     },
@@ -200,21 +259,74 @@ enum class Operator {
     LESS_THAN {
         override fun toSqlString() = "<"
     },
-    COUNT {
-        override fun toSqlString() = "count"
-    },
     ;
 
     abstract fun toSqlString(): String
 }
 
-enum class FunctionCall {
+// TODO most of these are operators on array fields, may require unnest etc.
+enum class UnaryFunctionCall {
     MAX {
         override fun toSqlString() = "max"
     },
+    COUNT {
+        override fun toSqlString() = "count"
+    },
+    ABS {
+        override fun toSqlString() = "abs"
+    },
+    CEIL {
+        override fun toSqlString() = "abs"
+    },
+    SORT {
+        override fun toSqlString() = "sort" // may require "intarray" in postgres https://www.postgresql.org/docs/current/intarray.html
+    },
+    SUM {
+        override fun toSqlString() = "sum"
+    },
     ;
 
+    companion object {
+        fun fromName(name: String): UnaryFunctionCall = when (name) {
+            "max" -> UnaryFunctionCall.MAX
+            "count" -> UnaryFunctionCall.COUNT
+            "abs" -> UnaryFunctionCall.ABS
+            "ceil" -> UnaryFunctionCall.CEIL
+            "sort" -> UnaryFunctionCall.SORT
+            "sum" -> UnaryFunctionCall.SUM
+            else -> throw IllegalStateException("Unrecognised unary function name $name")
+        }
+    }
+
     abstract fun toSqlString(): String
+}
+
+enum class InfixFunctionCall {
+    PLUS {
+        override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} + ${right.toSqlString()}"
+    },
+    MINUS {
+        override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} - ${right.toSqlString()}"
+    },
+    MOD {
+        override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} % ${right.toSqlString()}"
+    },
+    STARTS_WITH {
+        override fun toSqlString(left: Operand, right: Operand): String = "starts_with(${right.toSqlString()}, ${left.toSqlString()})"
+    },
+    ;
+
+    companion object {
+        fun fromName(name: String): InfixFunctionCall = when (name) {
+            "plus" -> InfixFunctionCall.PLUS
+            "minus" -> InfixFunctionCall.MINUS
+            "rem" -> InfixFunctionCall.MOD
+            "startswith" -> InfixFunctionCall.STARTS_WITH
+            else -> throw IllegalStateException("Unrecognised infix function name $name")
+        }
+    }
+
+    abstract fun toSqlString(left: Operand, right: Operand): String
 }
 
 sealed interface Operand {
@@ -223,6 +335,14 @@ sealed interface Operand {
 
 data class EntityFieldReference(val entityName: String, val fieldName: String) : Operand {
     override fun toSqlString() = "$entityName.$fieldName"
+}
+
+data class FunctionCallOnFieldReference(val field: EntityFieldReference, val functionCall: UnaryFunctionCall) : Operand {
+    override fun toSqlString() = "${functionCall.toSqlString()}(${field.toSqlString()})"
+}
+
+data class InfixFunctionCallOnOperands(val infixFunction: InfixFunctionCall, val left: Operand, val right: Operand) : Operand {
+    override fun toSqlString() = infixFunction.toSqlString(left, right)
 }
 
 sealed interface ConstantValue : Operand
@@ -246,10 +366,8 @@ data class NumberArrayValue(val values: List<Long>) : ConstantValue {
     override fun toSqlString() = values.joinToString(prefix = "[", postfix = "]", separator = ", ")
 }
 
-data class Criterion(val operator: Operator, val leftOperand: Operand, val rightOperand: Operand, val leftFunctionCall: FunctionCall?) {
-    fun toSqlString() {
-        "${leftFunctionCall?.let { "${it.toSqlString()}(" } ?: ""}${leftOperand.toSqlString()}${leftFunctionCall?.let { ")" ?: "" }} ${operator.toSqlString()} ${rightOperand.toSqlString()}"
-    }
+data class Criterion(val equalityOperator: EqualityOperator, val leftOperand: Operand, val rightOperand: Operand) {
+    fun toSqlString() = "${leftOperand.toSqlString()} ${equalityOperator.toSqlString()} ${rightOperand.toSqlString()}"
 }
 
 data class AndCriteria(val criteria: List<Criterion>) {
