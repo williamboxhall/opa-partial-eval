@@ -276,7 +276,7 @@ enum class UnaryFunctionCall {
         override fun toSqlString() = "abs"
     },
     CEIL {
-        override fun toSqlString() = "abs"
+        override fun toSqlString() = "ceil"
     },
     SORT {
         override fun toSqlString() = "sort" // may require "intarray" in postgres https://www.postgresql.org/docs/current/intarray.html
