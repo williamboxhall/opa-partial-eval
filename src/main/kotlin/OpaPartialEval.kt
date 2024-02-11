@@ -238,7 +238,7 @@ sealed interface Term
 data class RefTerm(val value: List<Term>) : Term
 data class VarTerm(val value: String) : Term
 data class StringTerm(val value: String) : Term
-data class NumberTerm(val value: Long) : Term // TODO can this be floating point?
+data class NumberTerm(val value: Number) : Term // represent as string because it might be integer or may be fractional
 data class BooleanTerm(val value: Boolean) : Term
 data class ArrayTerm(val value: List<Term>) : Term
 data class CallTerm(val value: List<Term>) : Term // takes form: 0-operator, 1-Ref term for the function, 2-column/leftOperand, 3-const/rightOperand
@@ -350,7 +350,7 @@ data class StringValue(val value: String) : ConstantValue {
     override fun toSqlString() = "\"$value\""
 }
 
-data class NumberValue(val value: Long) : ConstantValue {
+data class NumberValue(val value: Number) : ConstantValue {
     override fun toSqlString() = "$value"
 }
 
@@ -362,7 +362,7 @@ data class StringArrayValue(val values: List<String>) : ConstantValue {
     override fun toSqlString() = values.joinToString(prefix = "['", postfix = "']", separator = "', '")
 }
 
-data class NumberArrayValue(val values: List<Long>) : ConstantValue {
+data class NumberArrayValue(val values: List<Number>) : ConstantValue {
     override fun toSqlString() = values.joinToString(prefix = "[", postfix = "]", separator = ", ")
 }
 
