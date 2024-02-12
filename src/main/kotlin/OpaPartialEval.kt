@@ -180,8 +180,8 @@ object OpaPartialEval {
         is BooleanTerm -> BooleanValue(term.value)
         is VarTerm -> throw IllegalStateException("Operand can't be a 'var' term: $term")
         is ArrayTerm -> when (term.value.first()) {
-            is NumberTerm -> NumberArrayValue((term.value as List<NumberTerm>).map { it.value })
-            is StringTerm -> StringArrayValue((term.value as List<StringTerm>).map { it.value })
+            is NumberTerm -> NumberArrayValue((term.value as List<NumberTerm>).map { NumberValue(it.value) })
+            is StringTerm -> StringArrayValue((term.value as List<StringTerm>).map { StringValue(it.value) })
             is BooleanTerm -> throw IllegalStateException("No valid scenario for lists of booleans: $term")
             is RefTerm -> throw IllegalStateException("Can't match on multiple references: $term")
             is ArrayTerm -> throw IllegalStateException("Can't support arrays of arrays: $term")
@@ -190,8 +190,8 @@ object OpaPartialEval {
             is CallTerm -> throw IllegalStateException("Can't support arrays of calls: $term")
         }
         is SetTerm -> when (term.value.first()) {
-            is NumberTerm -> NumberSetValue((term.value as Set<NumberTerm>).map { it.value }.toSet())
-            is StringTerm -> StringSetValue((term.value as Set<StringTerm>).map { it.value }.toSet())
+            is NumberTerm -> NumberSetValue((term.value as Set<NumberTerm>).map { NumberValue(it.value) }.toSet())
+            is StringTerm -> StringSetValue((term.value as Set<StringTerm>).map { StringValue(it.value) }.toSet())
             is BooleanTerm -> throw IllegalStateException("No valid scenario for lists of booleans: $term")
             is RefTerm -> throw IllegalStateException("Can't match on multiple references: $term")
             is ArrayTerm -> throw IllegalStateException("Can't support sets of arrays: $term")
@@ -258,21 +258,29 @@ data class CallTerm(val value: List<Term>) : Term // takes form: 0-operator, 1-R
 enum class ComparisonOperator {
     EQUALS {
         override fun toSqlString(left: Operand, right: Operand): String {
+            val prefixLeft = prefixArray(left)
+            val prefixRight = prefixArray(right)
             return if (right is SetValue<*>) {
-                "${left.toSqlString()} @> ${right.toSqlString()} AND ${left.toSqlString()} <@ ${right.toSqlString()}"
+                "$prefixLeft @> $prefixRight AND $prefixLeft <@ $prefixRight"
             } else if (left is SetValue<*>) {
-                "${right.toSqlString()} @> ${left.toSqlString()} AND ${right.toSqlString()} <@ ${left.toSqlString()}"
+                "$prefixRight @> $prefixLeft AND $prefixRight <@ $prefixLeft"
             } else {
-                "${left.toSqlString()} = ${right.toSqlString()}"
+                "$prefixLeft = $prefixRight"
             }
         }
+
+        private fun prefixArray(operand: Operand) = if (operand is CollectionValue<*>) { "ARRAY${operand.toSqlString()}" } else { operand.toSqlString() }
     },
     NOT_EQUALS {
         override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} != ${right.toSqlString()}"
     },
     IN_LIST {
         override fun toSqlString(left: Operand, right: Operand): String {
-            return "${left.toSqlString()} = ANY(${right.toSqlString()})"
+            return if (right is EntityFieldReference) {
+                "${left.toSqlString()} = ANY(${right.toSqlString()})"
+            } else {
+                "${left.toSqlString()} IN ${right.toSqlString()}"
+            }
         }
     },
     GREATER_THAN {
@@ -379,21 +387,17 @@ data class BooleanValue(val value: Boolean) : ConstantValue {
     override fun toSqlString() = value.toString().uppercase()
 }
 
-sealed interface ArrayValue<T> : ConstantValue {
-    val values: List<T>
-    override fun toSqlString() = "ARRAY${values.joinToString(prefix = "['", postfix = "']", separator = "', '")}"
+sealed interface CollectionValue<T : Iterable<ConstantValue>> : ConstantValue {
+    val values: T
+    override fun toSqlString(): String = values.joinToString(prefix = "[", postfix = "]", separator = ", ") { it.toSqlString() }
 }
 
-data class StringArrayValue(override val values: List<String>) : ArrayValue<String>
-data class NumberArrayValue(override val values: List<Number>) : ArrayValue<Number>
-
-sealed interface SetValue<T> : ConstantValue {
-    val values: Set<T>
-    override fun toSqlString() = "ARRAY${values.joinToString(prefix = "['", postfix = "']", separator = "', '")}"
-}
-
-data class StringSetValue(override val values: Set<String>) : SetValue<String>
-data class NumberSetValue(override val values: Set<Number>) : SetValue<Number>
+sealed interface ArrayValue<T : ConstantValue> : CollectionValue<List<T>>
+data class StringArrayValue(override val values: List<StringValue>) : ArrayValue<StringValue>
+data class NumberArrayValue(override val values: List<NumberValue>) : ArrayValue<NumberValue>
+sealed interface SetValue<T : ConstantValue> : CollectionValue<Set<T>>
+data class StringSetValue(override val values: Set<StringValue>) : SetValue<StringValue>
+data class NumberSetValue(override val values: Set<NumberValue>) : SetValue<NumberValue>
 
 data class Criterion(val comparisonOperator: ComparisonOperator, val left: Operand, val right: Operand) {
     fun toSqlString() = comparisonOperator.toSqlString(left, right)

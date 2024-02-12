@@ -6,11 +6,12 @@ class OpaPartialEvalTest {
     fun `generates SQL fragments for complex 'some i' construct in result payload`() {
         assertEquals(
             """
-                ((456 = entity.account_id AND 123 = entity.author_id) OR 
-                (456 = entity.account_id AND 789 = entity.author_id) OR 
-                (456 = entity.account_id AND 333 = entity.author_id) OR 
-                (456 = entity.account_id))""",
-            OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-complex-some-construct.json")),
+                ((456 = entity.account_id AND 123 = entity.author_id) OR
+                (456 = entity.account_id AND 789 = entity.author_id) OR
+                (456 = entity.account_id AND 333 = entity.author_id) OR
+                (456 = entity.account_id))
+            """.trimIndent(),
+            OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-complex-some-construct.json")).replace(" OR ", " OR\n"),
         )
     }
 
@@ -18,7 +19,7 @@ class OpaPartialEvalTest {
     fun `generates SQL fragments for 'in' construct in result payload`() {
         assertEquals(
             "((456 = entity.account_id AND 123 = entity.author_id) OR (456 = entity.account_id) OR (456 = entity.account_id AND entity.author_id IN [789, 333]))",
-            OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-in-construct.json")),
+            OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-complex-in-construct.json")),
         )
     }
 
