@@ -60,6 +60,36 @@
         "type" : "ref",
         "value" : [ {
           "type" : "var",
+          "value" : "eq"
+        } ]
+      }, {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "input"
+        }, {
+          "type" : "string",
+          "value" : "entity"
+        }, {
+          "type" : "string",
+          "value" : "b2"
+        } ]
+      }, {
+        "type" : "array",
+        "value" : [ {
+          "type" : "string",
+          "value" : "foo"
+        }, {
+          "type" : "string",
+          "value" : "bar"
+        } ]
+      } ]
+    }, {
+      "index" : 3,
+      "terms" : [ {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
           "value" : "internal"
         }, {
           "type" : "string",
@@ -82,7 +112,7 @@
         } ]
       } ]
     }, {
-      "index" : 3,
+      "index" : 4,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -106,7 +136,7 @@
         "value" : 2
       } ]
     }, {
-      "index" : 4,
+      "index" : 5,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -130,7 +160,7 @@
         "value" : 3
       } ]
     }, {
-      "index" : 5,
+      "index" : 6,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -157,7 +187,34 @@
         "value" : 7
       } ]
     }, {
-      "index" : 6,
+      "index" : 7,
+      "terms" : [ {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "plus"
+        } ]
+      }, {
+        "type" : "number",
+        "value" : 3
+      }, {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "input"
+        }, {
+          "type" : "string",
+          "value" : "entity"
+        }, {
+          "type" : "string",
+          "value" : "i3"
+        } ]
+      }, {
+        "type" : "number",
+        "value" : 73
+      } ]
+    }, {
+      "index" : 8,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -193,7 +250,7 @@
         "value" : 72
       } ]
     }, {
-      "index" : 7,
+      "index" : 9,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -217,7 +274,7 @@
         "value" : 4
       } ]
     }, {
-      "index" : 8,
+      "index" : 10,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -250,7 +307,7 @@
         "value" : 42
       } ]
     }, {
-      "index" : 9,
+      "index" : 11,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -286,7 +343,7 @@
         "value" : 43
       } ]
     }, {
-      "index" : 10,
+      "index" : 12,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -331,7 +388,7 @@
         "value" : 44
       } ]
     }, {
-      "index" : 11,
+      "index" : 13,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -355,7 +412,7 @@
         "value" : 5
       } ]
     }, {
-      "index" : 12,
+      "index" : 14,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -388,7 +445,7 @@
         "value" : 52
       } ]
     }, {
-      "index" : 13,
+      "index" : 15,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -412,7 +469,7 @@
         "value" : 6
       } ]
     }, {
-      "index" : 14,
+      "index" : 16,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -445,7 +502,7 @@
         "value" : 62
       } ]
     }, {
-      "index" : 15,
+      "index" : 17,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -478,7 +535,7 @@
               "value" : "entity"
             }, {
               "type" : "string",
-              "value" : "i2"
+              "value" : "i4"
             } ]
           }, {
             "type" : "number",
@@ -496,7 +553,7 @@
         "value" : 72
       } ]
     }, {
-      "index" : 16,
+      "index" : 18,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -537,7 +594,7 @@
                 "value" : "entity"
               }, {
                 "type" : "string",
-                "value" : "i3"
+                "value" : "i5"
               } ]
             }, {
               "type" : "number",
@@ -556,7 +613,7 @@
         "value" : 73
       } ]
     }, {
-      "index" : 17,
+      "index" : 19,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -580,10 +637,10 @@
         "value" : 8
       }, {
         "type" : "number",
-        "value" : 8
+        "value" : 0
       } ]
     }, {
-      "index" : 18,
+      "index" : 20,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -607,7 +664,7 @@
         "value" : 0.912
       } ]
     }, {
-      "index" : 19,
+      "index" : 21,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -640,7 +697,7 @@
         "value" : 10
       } ]
     }, {
-      "index" : 20,
+      "index" : 22,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -670,7 +727,7 @@
         } ]
       } ]
     }, {
-      "index" : 21,
+      "index" : 23,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -694,7 +751,7 @@
         "value" : 11
       } ]
     }, {
-      "index" : 22,
+      "index" : 24,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {
@@ -730,7 +787,7 @@
         "value" : 12
       } ]
     }, {
-      "index" : 23,
+      "index" : 25,
       "terms" : [ {
         "type" : "ref",
         "value" : [ {

@@ -185,8 +185,19 @@ object OpaPartialEval {
             is BooleanTerm -> throw IllegalStateException("No valid scenario for lists of booleans: $term")
             is RefTerm -> throw IllegalStateException("Can't match on multiple references: $term")
             is ArrayTerm -> throw IllegalStateException("Can't support arrays of arrays: $term")
+            is SetTerm -> throw IllegalStateException("Can't support arrays of sets: $term")
             is VarTerm -> throw IllegalStateException("Can't support arrays of vars: $term")
             is CallTerm -> throw IllegalStateException("Can't support arrays of calls: $term")
+        }
+        is SetTerm -> when (term.value.first()) {
+            is NumberTerm -> NumberSetValue((term.value as Set<NumberTerm>).map { it.value }.toSet())
+            is StringTerm -> StringSetValue((term.value as Set<StringTerm>).map { it.value }.toSet())
+            is BooleanTerm -> throw IllegalStateException("No valid scenario for lists of booleans: $term")
+            is RefTerm -> throw IllegalStateException("Can't match on multiple references: $term")
+            is ArrayTerm -> throw IllegalStateException("Can't support sets of arrays: $term")
+            is SetTerm -> throw IllegalStateException("Can't support sets of sets: $term")
+            is VarTerm -> throw IllegalStateException("Can't support sets of vars: $term")
+            is CallTerm -> throw IllegalStateException("Can't support sets of calls: $term")
         }
     }
 
@@ -231,7 +242,7 @@ data class CompileResult(val result: PartialQueries)
     JsonSubTypes.Type(value = NumberTerm::class, name = "number"),
     JsonSubTypes.Type(value = BooleanTerm::class, name = "boolean"),
     JsonSubTypes.Type(value = ArrayTerm::class, name = "array"),
-    JsonSubTypes.Type(value = ArrayTerm::class, name = "set"), // Currently not bothering to represent Sets as semantic sets, Array is fine
+    JsonSubTypes.Type(value = SetTerm::class, name = "set"),
     JsonSubTypes.Type(value = CallTerm::class, name = "call"),
 )
 sealed interface Term
@@ -241,11 +252,20 @@ data class StringTerm(val value: String) : Term
 data class NumberTerm(val value: Number) : Term // represent as string because it might be integer or may be fractional
 data class BooleanTerm(val value: Boolean) : Term
 data class ArrayTerm(val value: List<Term>) : Term
+data class SetTerm(val value: Set<Term>) : Term
 data class CallTerm(val value: List<Term>) : Term // takes form: 0-operator, 1-Ref term for the function, 2-column/leftOperand, 3-const/rightOperand
 
 enum class ComparisonOperator {
     EQUALS {
-        override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} = ${right.toSqlString()}"
+        override fun toSqlString(left: Operand, right: Operand): String {
+            return if (right is SetValue<*>) {
+                "${left.toSqlString()} @> ${right.toSqlString()} AND ${left.toSqlString()} <@ ${right.toSqlString()}"
+            } else if (left is SetValue<*>) {
+                "${right.toSqlString()} @> ${left.toSqlString()} AND ${right.toSqlString()} <@ ${left.toSqlString()}"
+            } else {
+                "${left.toSqlString()} = ${right.toSqlString()}"
+            }
+        }
     },
     NOT_EQUALS {
         override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} != ${right.toSqlString()}"
@@ -359,13 +379,21 @@ data class BooleanValue(val value: Boolean) : ConstantValue {
     override fun toSqlString() = value.toString().uppercase()
 }
 
-data class StringArrayValue(val values: List<String>) : ConstantValue {
+sealed interface ArrayValue<T> : ConstantValue {
+    val values: List<T>
     override fun toSqlString() = "ARRAY${values.joinToString(prefix = "['", postfix = "']", separator = "', '")}"
 }
 
-data class NumberArrayValue(val values: List<Number>) : ConstantValue {
+data class StringArrayValue(override val values: List<String>) : ArrayValue<String>
+data class NumberArrayValue(override val values: List<Number>) : ArrayValue<Number>
+
+sealed interface SetValue<T> : ConstantValue {
+    val values: Set<T>
     override fun toSqlString() = "ARRAY${values.joinToString(prefix = "['", postfix = "']", separator = "', '")}"
 }
+
+data class StringSetValue(override val values: Set<String>) : SetValue<String>
+data class NumberSetValue(override val values: Set<Number>) : SetValue<Number>
 
 data class Criterion(val comparisonOperator: ComparisonOperator, val left: Operand, val right: Operand) {
     fun toSqlString() = comparisonOperator.toSqlString(left, right)

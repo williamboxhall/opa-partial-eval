@@ -5,7 +5,8 @@ import future.keywords.in
 
 allow if {
 	input.entity.a == 1
-	input.entity.b == { "foo", "bar" }
+	input.entity.b == { "bar", "foo" }
+	input.entity.b2 == [ "foo", "bar" ]
 	false in input.entity.c
     input.entity.d != 2
     input.entity.e > 3
@@ -20,9 +21,9 @@ allow if {
     abs(input.entity.g2) > 52
     ceil(input.entity.h) == 6
     ceil(input.entity.h2) > 62
-    input.entity.i2 + 3 + 4 + 5 == 72
-    input.entity.i3 + 3 + 4 + 5 > 73
-    input.entity.j % 8 == 8
+    input.entity.i4 + 3 + 4 + 5 == 72
+    input.entity.i5 + 3 + 4 + 5 > 73
+    input.entity.j % 8 == 0
     input.entity.k == 0.912
     max(input.entity.l) < 10
     sort(input.entity.m) == [ "a", "b" ]
