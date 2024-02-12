@@ -1,0 +1,95 @@
+{
+  "result" : {
+    "queries" : [ [ {
+      "index" : 0,
+      "terms" : {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "data"
+        }, {
+          "type" : "string",
+          "value" : "partial"
+        }, {
+          "type" : "string",
+          "value" : "simple_with_illegal_default"
+        }, {
+          "type" : "string",
+          "value" : "allow"
+        } ]
+      }
+    } ] ],
+    "support" : [ {
+      "package" : {
+        "path" : [ {
+          "type" : "var",
+          "value" : "data"
+        }, {
+          "type" : "string",
+          "value" : "partial"
+        }, {
+          "type" : "string",
+          "value" : "simple_with_illegal_default"
+        } ]
+      },
+      "rules" : [ {
+        "body" : [ {
+          "index" : 0,
+          "terms" : [ {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "eq"
+            } ]
+          }, {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "input"
+            }, {
+              "type" : "string",
+              "value" : "entity"
+            }, {
+              "type" : "string",
+              "value" : "a"
+            } ]
+          }, {
+            "type" : "number",
+            "value" : 1
+          } ]
+        } ],
+        "head" : {
+          "name" : "allow",
+          "value" : {
+            "type" : "boolean",
+            "value" : true
+          },
+          "ref" : [ {
+            "type" : "var",
+            "value" : "allow"
+          } ]
+        }
+      }, {
+        "body" : [ {
+          "index" : 0,
+          "terms" : {
+            "type" : "boolean",
+            "value" : true
+          }
+        } ],
+        "default" : true,
+        "head" : {
+          "name" : "allow",
+          "value" : {
+            "type" : "boolean",
+            "value" : true
+          },
+          "ref" : [ {
+            "type" : "var",
+            "value" : "allow"
+          } ]
+        }
+      } ]
+    } ]
+  }
+}

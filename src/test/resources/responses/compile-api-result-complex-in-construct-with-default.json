@@ -1,0 +1,226 @@
+{
+  "result" : {
+    "queries" : [ [ {
+      "index" : 0,
+      "terms" : {
+        "type" : "ref",
+        "value" : [ {
+          "type" : "var",
+          "value" : "data"
+        }, {
+          "type" : "string",
+          "value" : "partial"
+        }, {
+          "type" : "string",
+          "value" : "complex_in_construct_with_default"
+        }, {
+          "type" : "string",
+          "value" : "allow"
+        } ]
+      }
+    } ] ],
+    "support" : [ {
+      "package" : {
+        "path" : [ {
+          "type" : "var",
+          "value" : "data"
+        }, {
+          "type" : "string",
+          "value" : "partial"
+        }, {
+          "type" : "string",
+          "value" : "complex_in_construct_with_default"
+        } ]
+      },
+      "rules" : [ {
+        "body" : [ {
+          "index" : 0,
+          "terms" : {
+            "type" : "boolean",
+            "value" : true
+          }
+        } ],
+        "default" : true,
+        "head" : {
+          "name" : "allow",
+          "value" : {
+            "type" : "boolean",
+            "value" : false
+          },
+          "ref" : [ {
+            "type" : "var",
+            "value" : "allow"
+          } ]
+        }
+      }, {
+        "body" : [ {
+          "index" : 0,
+          "terms" : [ {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "eq"
+            } ]
+          }, {
+            "type" : "number",
+            "value" : 456
+          }, {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "input"
+            }, {
+              "type" : "string",
+              "value" : "entity"
+            }, {
+              "type" : "string",
+              "value" : "account_id"
+            } ]
+          } ]
+        } ],
+        "head" : {
+          "name" : "allow",
+          "value" : {
+            "type" : "boolean",
+            "value" : true
+          },
+          "ref" : [ {
+            "type" : "var",
+            "value" : "allow"
+          } ]
+        }
+      }, {
+        "body" : [ {
+          "index" : 0,
+          "terms" : [ {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "eq"
+            } ]
+          }, {
+            "type" : "number",
+            "value" : 456
+          }, {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "input"
+            }, {
+              "type" : "string",
+              "value" : "entity"
+            }, {
+              "type" : "string",
+              "value" : "account_id"
+            } ]
+          } ]
+        }, {
+          "index" : 1,
+          "terms" : [ {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "eq"
+            } ]
+          }, {
+            "type" : "number",
+            "value" : 123
+          }, {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "input"
+            }, {
+              "type" : "string",
+              "value" : "entity"
+            }, {
+              "type" : "string",
+              "value" : "author_id"
+            } ]
+          } ]
+        } ],
+        "head" : {
+          "name" : "allow",
+          "value" : {
+            "type" : "boolean",
+            "value" : true
+          },
+          "ref" : [ {
+            "type" : "var",
+            "value" : "allow"
+          } ]
+        }
+      }, {
+        "body" : [ {
+          "index" : 0,
+          "terms" : [ {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "eq"
+            } ]
+          }, {
+            "type" : "number",
+            "value" : 456
+          }, {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "input"
+            }, {
+              "type" : "string",
+              "value" : "entity"
+            }, {
+              "type" : "string",
+              "value" : "account_id"
+            } ]
+          } ]
+        }, {
+          "index" : 1,
+          "terms" : [ {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "internal"
+            }, {
+              "type" : "string",
+              "value" : "member_2"
+            } ]
+          }, {
+            "type" : "ref",
+            "value" : [ {
+              "type" : "var",
+              "value" : "input"
+            }, {
+              "type" : "string",
+              "value" : "entity"
+            }, {
+              "type" : "string",
+              "value" : "author_id"
+            } ]
+          }, {
+            "type" : "array",
+            "value" : [ {
+              "type" : "number",
+              "value" : 789
+            }, {
+              "type" : "number",
+              "value" : 333
+            } ]
+          } ]
+        } ],
+        "head" : {
+          "name" : "allow",
+          "value" : {
+            "type" : "boolean",
+            "value" : true
+          },
+          "ref" : [ {
+            "type" : "var",
+            "value" : "allow"
+          } ]
+        }
+      } ]
+    } ]
+  }
+}

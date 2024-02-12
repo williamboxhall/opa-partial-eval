@@ -16,6 +16,8 @@ object OpaHttpClientTest {
             assertEquals(readFile("responses/compile-api-result-all-operators.json"), compileApiResponseJson(userContext, "all_operators"))
             assertEquals(readFile("responses/compile-api-result-simple-without-default.json"), compileApiResponseJson(userContext, "simple_without_default"))
             assertEquals(readFile("responses/compile-api-result-simple-with-default.json"), compileApiResponseJson(userContext, "simple_with_default"))
+            assertEquals(readFile("responses/compile-api-result-simple-with-illegal-default.json"), compileApiResponseJson(userContext, "simple_with_illegal_default"))
+            assertEquals(readFile("responses/compile-api-result-complex-in-construct-with-default.json"), compileApiResponseJson(userContext, "complex_in_construct_with_default"))
         }
         println("All test files look correct!")
     }

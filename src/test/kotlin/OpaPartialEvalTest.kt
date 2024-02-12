@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 class OpaPartialEvalTest {
@@ -20,6 +21,10 @@ class OpaPartialEvalTest {
         assertEquals(
             "((456 = entity.account_id AND 123 = entity.author_id) OR (456 = entity.account_id) OR (456 = entity.account_id AND entity.author_id IN [789, 333]))",
             OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-complex-in-construct.json")),
+        )
+        assertEquals(
+            "((456 = entity.account_id) OR (456 = entity.account_id AND 123 = entity.author_id) OR (456 = entity.account_id AND entity.author_id IN [789, 333]))",
+            OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-complex-in-construct-with-default.json")),
         )
     }
 
@@ -58,6 +63,22 @@ class OpaPartialEvalTest {
             OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-all-operators.json")).replace(" AND ", " AND\n"),
         )
     }
+
+    @Test
+    fun `when default is missing, assume false`() {
+        assertEquals("((entity.a = 1))", OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-simple-without-default.json")))
+        assertEquals("((entity.a = 1))", OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-simple-with-default.json")))
+    }
+
+    @Test
+    fun `fails if supplied default is not false`() {
+        val exception = assertThrows<IllegalStateException> {
+            OpaPartialEval.compileApiResponseToSql(readFile("responses/compile-api-result-simple-with-illegal-default.json"))
+        }
+        assertEquals("When default is present, it must be false", exception.message)
+    }
+
+    // TODO test for once policy file with two different evaluations in it, allow and allow2
 
     private fun readFile(fileName: String): String {
         return this::class.java.getResource(fileName).readText(Charsets.UTF_8)

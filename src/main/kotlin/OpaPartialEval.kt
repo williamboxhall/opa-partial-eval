@@ -23,13 +23,24 @@ object OpaPartialEval {
         return criteria.toSqlString()
     }
 
-    // TODO can both rules.queries and rules.support exist at the same time?
     private fun compileApiResponseToCriteria(compileApiResponse: CompileResult): OrCriteria {
-        if (compileApiResponse.result.support != null) {
-            throw IllegalStateException("Not yet supporting 'support' block")
+        val andCriteria = if (compileApiResponse.result.support != null) { // occurs when "default" is provided
+            compileApiResponse.result.support.map { it.rules.map { parseRule(it) } }.flatten().filterNotNull()
+        } else {
+            compileApiResponse.result.queries.map { AndCriteria(parseQueries(it)) }
         }
-        val andCriteria = compileApiResponse.result.queries.map { AndCriteria(parseQueries(it)) }
         return OrCriteria(andCriteria)
+    }
+
+    private fun parseRule(rule: Rule): AndCriteria? {
+        return if (rule.default == true) {
+            if (rule.head.value != BooleanTerm(false)) {
+                throw IllegalStateException("When default is present, it must be false")
+            }
+            null
+        } else {
+            AndCriteria(parseQueries(rule.body))
+        }
     }
 
     private fun parseQueries(orQueries: List<Expr>) = orQueries.mapNotNull { andQueries ->
@@ -124,6 +135,7 @@ object OpaPartialEval {
             }
             UnaryFunctionCall.fromName(functionVar.value)
         }
+
         else -> {
             throw IllegalStateException("Unary function calls must be ref terms: $term")
         }
@@ -140,6 +152,7 @@ object OpaPartialEval {
             }
             BinaryFunctionCall.fromName(functionVar.value)
         }
+
         else -> {
             throw IllegalStateException("Infix function calls must be call terms: $term")
         }
@@ -189,6 +202,7 @@ object OpaPartialEval {
             is VarTerm -> throw IllegalStateException("Can't support arrays of vars: $term")
             is CallTerm -> throw IllegalStateException("Can't support arrays of calls: $term")
         }
+
         is SetTerm -> when (term.value.first()) {
             is NumberTerm -> NumberSetValue((term.value as Set<NumberTerm>).map { NumberValue(it.value) }.toSet())
             is StringTerm -> StringSetValue((term.value as Set<StringTerm>).map { StringValue(it.value) }.toSet())
@@ -269,7 +283,11 @@ enum class ComparisonOperator {
             }
         }
 
-        private fun prefixArray(operand: Operand) = if (operand is CollectionValue<*>) { "ARRAY${operand.toSqlString()}" } else { operand.toSqlString() }
+        private fun prefixArray(operand: Operand) = if (operand is CollectionValue<*>) {
+            "ARRAY${operand.toSqlString()}"
+        } else {
+            operand.toSqlString()
+        }
     },
     NOT_EQUALS {
         override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} != ${right.toSqlString()}"
