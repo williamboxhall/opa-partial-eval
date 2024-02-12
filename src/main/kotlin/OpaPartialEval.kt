@@ -1,8 +1,8 @@
-import EqualityOperator.EQUALS
-import EqualityOperator.GREATER_THAN
-import EqualityOperator.IN_LIST
-import EqualityOperator.LESS_THAN
-import EqualityOperator.NOT_EQUALS
+import ComparisonOperator.EQUALS
+import ComparisonOperator.GREATER_THAN
+import ComparisonOperator.IN_LIST
+import ComparisonOperator.LESS_THAN
+import ComparisonOperator.NOT_EQUALS
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonParser
@@ -66,7 +66,7 @@ object OpaPartialEval {
             3 -> andQueries.terms
             else -> throw IllegalStateException("andQueries should be 3 terms long but was $andQueries")
         }
-        val (operator, functionCall) = parseEqualityOperator(operatorTerm)
+        val (operator, functionCall) = parseComparisonOperator(operatorTerm)
         val left = parseOperand(leftOperand, functionCall)
         val right = parseOperand(rightOperand, null)
         return if (left is EntityFieldReference && right is EntityFieldReference) {
@@ -83,7 +83,7 @@ object OpaPartialEval {
             4 -> andQueries.terms
             else -> throw IllegalStateException("andQueries should be 4 terms long but was $andQueries")
         }
-        val functionCall = parseInfixFunctionCall(infixOperatorTerm)
+        val functionCall = parseBinaryFunctionCall(infixOperatorTerm)
         val leftFirst = parseOperand(leftOperandFirst, null)
         val leftSecond = parseOperand(leftOperandSecond, null)
         val right = parseOperand(rightOperand, null)
@@ -94,7 +94,7 @@ object OpaPartialEval {
         }
     }
 
-    private fun parseEqualityOperator(term: Term): Pair<EqualityOperator, UnaryFunctionCall?> = when (term) {
+    private fun parseComparisonOperator(term: Term): Pair<ComparisonOperator, UnaryFunctionCall?> = when (term) {
         is RefTerm -> {
             val operatorVar = term.value.first()
             if (operatorVar !is VarTerm) {
@@ -129,7 +129,7 @@ object OpaPartialEval {
         }
     }
 
-    private fun parseInfixFunctionCall(term: Term): InfixFunctionCall = when (term) {
+    private fun parseBinaryFunctionCall(term: Term): BinaryFunctionCall = when (term) {
         is RefTerm -> {
             if (term.value.size != 1) {
                 throw IllegalStateException("Unexpected infix function call ref term format: $term")
@@ -138,7 +138,7 @@ object OpaPartialEval {
             if (functionVar !is VarTerm) {
                 throw IllegalStateException("Unexpected type of infix function call term: $term")
             }
-            InfixFunctionCall.fromName(functionVar.value)
+            BinaryFunctionCall.fromName(functionVar.value)
         }
         else -> {
             throw IllegalStateException("Infix function calls must be call terms: $term")
@@ -155,7 +155,7 @@ object OpaPartialEval {
             if (term.value.size == 3) {
                 // nested infix function calls
                 val (infixFunction, leftOperand, rightOperand) = term.value
-                val function = parseInfixFunctionCall(infixFunction)
+                val function = parseBinaryFunctionCall(infixFunction)
                 val left = parseOperand(leftOperand, null)
                 val right = parseOperand(rightOperand, null)
                 InfixFunctionCallOnOperands(function, left, right)
@@ -243,7 +243,7 @@ data class BooleanTerm(val value: Boolean) : Term
 data class ArrayTerm(val value: List<Term>) : Term
 data class CallTerm(val value: List<Term>) : Term // takes form: 0-operator, 1-Ref term for the function, 2-column/leftOperand, 3-const/rightOperand
 
-enum class EqualityOperator {
+enum class ComparisonOperator {
     EQUALS {
         override fun toSqlString() = "="
     },
@@ -288,12 +288,12 @@ enum class UnaryFunctionCall {
 
     companion object {
         fun fromName(name: String): UnaryFunctionCall = when (name) {
-            "max" -> UnaryFunctionCall.MAX
-            "count" -> UnaryFunctionCall.COUNT
-            "abs" -> UnaryFunctionCall.ABS
-            "ceil" -> UnaryFunctionCall.CEIL
-            "sort" -> UnaryFunctionCall.SORT
-            "sum" -> UnaryFunctionCall.SUM
+            "max" -> MAX
+            "count" -> COUNT
+            "abs" -> ABS
+            "ceil" -> CEIL
+            "sort" -> SORT
+            "sum" -> SUM
             else -> throw IllegalStateException("Unrecognised unary function name $name")
         }
     }
@@ -301,7 +301,7 @@ enum class UnaryFunctionCall {
     abstract fun toSqlString(): String
 }
 
-enum class InfixFunctionCall {
+enum class BinaryFunctionCall {
     PLUS {
         override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} + ${right.toSqlString()}"
     },
@@ -317,11 +317,11 @@ enum class InfixFunctionCall {
     ;
 
     companion object {
-        fun fromName(name: String): InfixFunctionCall = when (name) {
-            "plus" -> InfixFunctionCall.PLUS
-            "minus" -> InfixFunctionCall.MINUS
-            "rem" -> InfixFunctionCall.MOD
-            "startswith" -> InfixFunctionCall.STARTS_WITH
+        fun fromName(name: String): BinaryFunctionCall = when (name) {
+            "plus" -> PLUS
+            "minus" -> MINUS
+            "rem" -> MOD
+            "startswith" -> STARTS_WITH
             else -> throw IllegalStateException("Unrecognised infix function name $name")
         }
     }
@@ -341,7 +341,7 @@ data class FunctionCallOnFieldReference(val field: EntityFieldReference, val fun
     override fun toSqlString() = "${functionCall.toSqlString()}(${field.toSqlString()})"
 }
 
-data class InfixFunctionCallOnOperands(val infixFunction: InfixFunctionCall, val left: Operand, val right: Operand) : Operand {
+data class InfixFunctionCallOnOperands(val infixFunction: BinaryFunctionCall, val left: Operand, val right: Operand) : Operand {
     override fun toSqlString() = infixFunction.toSqlString(left, right)
 }
 
@@ -366,8 +366,8 @@ data class NumberArrayValue(val values: List<Number>) : ConstantValue {
     override fun toSqlString() = values.joinToString(prefix = "[", postfix = "]", separator = ", ")
 }
 
-data class Criterion(val equalityOperator: EqualityOperator, val leftOperand: Operand, val rightOperand: Operand) {
-    fun toSqlString() = "${leftOperand.toSqlString()} ${equalityOperator.toSqlString()} ${rightOperand.toSqlString()}"
+data class Criterion(val comparisonOperator: ComparisonOperator, val leftOperand: Operand, val rightOperand: Operand) {
+    fun toSqlString() = "${leftOperand.toSqlString()} ${comparisonOperator.toSqlString()} ${rightOperand.toSqlString()}"
 }
 
 data class AndCriteria(val criteria: List<Criterion>) {
