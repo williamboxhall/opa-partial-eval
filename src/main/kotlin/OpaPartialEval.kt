@@ -245,44 +245,45 @@ data class CallTerm(val value: List<Term>) : Term // takes form: 0-operator, 1-R
 
 enum class ComparisonOperator {
     EQUALS {
-        override fun toSqlString() = "="
+        override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} = ${right.toSqlString()}"
     },
     NOT_EQUALS {
-        override fun toSqlString() = "!="
+        override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} != ${right.toSqlString()}"
     },
     IN_LIST {
-        override fun toSqlString() = "IN"
+        override fun toSqlString(left: Operand, right: Operand): String {
+            return "${left.toSqlString()} = ANY(${right.toSqlString()})"
+        }
     },
     GREATER_THAN {
-        override fun toSqlString() = ">"
+        override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} > ${right.toSqlString()}"
     },
     LESS_THAN {
-        override fun toSqlString() = "<"
+        override fun toSqlString(left: Operand, right: Operand): String = "${left.toSqlString()} < ${right.toSqlString()}"
     },
     ;
 
-    abstract fun toSqlString(): String
+    abstract fun toSqlString(left: Operand, right: Operand): String
 }
 
-// TODO most of these are operators on array fields, may require unnest etc.
 enum class UnaryFunctionCall {
     MAX {
-        override fun toSqlString() = "max"
+        override fun toSqlString(field: EntityFieldReference): String = "(SELECT MAX(val) FROM unnest(${field.toSqlString()}) AS t(val))"
     },
     COUNT {
-        override fun toSqlString() = "count"
+        override fun toSqlString(field: EntityFieldReference): String = "cardinality(${field.toSqlString()})"
     },
     ABS {
-        override fun toSqlString() = "abs"
+        override fun toSqlString(field: EntityFieldReference): String = "abs(${field.toSqlString()})"
     },
     CEIL {
-        override fun toSqlString() = "ceil"
+        override fun toSqlString(field: EntityFieldReference): String = "ceil(${field.toSqlString()})"
     },
     SORT {
-        override fun toSqlString() = "sort" // may require "intarray" in postgres https://www.postgresql.org/docs/current/intarray.html
+        override fun toSqlString(field: EntityFieldReference): String = "ARRAY(SELECT val FROM unnest(${field.toSqlString()}) AS t(val) ORDER BY val)"
     },
     SUM {
-        override fun toSqlString() = "sum"
+        override fun toSqlString(field: EntityFieldReference): String = "(SELECT SUM(val) FROM unnest(${field.toSqlString()}) AS t(val))"
     },
     ;
 
@@ -298,7 +299,7 @@ enum class UnaryFunctionCall {
         }
     }
 
-    abstract fun toSqlString(): String
+    abstract fun toSqlString(field: EntityFieldReference): String
 }
 
 enum class BinaryFunctionCall {
@@ -338,7 +339,7 @@ data class EntityFieldReference(val entityName: String, val fieldName: String) :
 }
 
 data class FunctionCallOnFieldReference(val field: EntityFieldReference, val functionCall: UnaryFunctionCall) : Operand {
-    override fun toSqlString() = "${functionCall.toSqlString()}(${field.toSqlString()})"
+    override fun toSqlString() = functionCall.toSqlString(field)
 }
 
 data class InfixFunctionCallOnOperands(val infixFunction: BinaryFunctionCall, val left: Operand, val right: Operand) : Operand {
@@ -347,7 +348,7 @@ data class InfixFunctionCallOnOperands(val infixFunction: BinaryFunctionCall, va
 
 sealed interface ConstantValue : Operand
 data class StringValue(val value: String) : ConstantValue {
-    override fun toSqlString() = "\"$value\""
+    override fun toSqlString() = "'$value'"
 }
 
 data class NumberValue(val value: Number) : ConstantValue {
@@ -359,15 +360,15 @@ data class BooleanValue(val value: Boolean) : ConstantValue {
 }
 
 data class StringArrayValue(val values: List<String>) : ConstantValue {
-    override fun toSqlString() = values.joinToString(prefix = "['", postfix = "']", separator = "', '")
+    override fun toSqlString() = "ARRAY${values.joinToString(prefix = "['", postfix = "']", separator = "', '")}"
 }
 
 data class NumberArrayValue(val values: List<Number>) : ConstantValue {
-    override fun toSqlString() = values.joinToString(prefix = "[", postfix = "]", separator = ", ")
+    override fun toSqlString() = "ARRAY${values.joinToString(prefix = "['", postfix = "']", separator = "', '")}"
 }
 
-data class Criterion(val comparisonOperator: ComparisonOperator, val leftOperand: Operand, val rightOperand: Operand) {
-    fun toSqlString() = "${leftOperand.toSqlString()} ${comparisonOperator.toSqlString()} ${rightOperand.toSqlString()}"
+data class Criterion(val comparisonOperator: ComparisonOperator, val left: Operand, val right: Operand) {
+    fun toSqlString() = comparisonOperator.toSqlString(left, right)
 }
 
 data class AndCriteria(val criteria: List<Criterion>) {
